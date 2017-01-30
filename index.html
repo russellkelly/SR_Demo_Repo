@@ -115,8 +115,8 @@ svg.append("svg:defs").selectAll("marker")
   .enter().append("svg:marker")    // This section adds in the arrows
     .attr("id", String)
     .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 22)
-    .attr("refY", -1.1)
+    .attr("refX", 15)
+    .attr("refY", -0.5)
     .attr("markerWidth", 4)
     .attr("markerHeight", 4)
     .attr("orient", "auto")
@@ -284,10 +284,10 @@ d3.json("sr_topology.json", function(error, json) {
 
   node.append("image")
       .attr("xlink:href", "router.png")
-      .attr("x", -32)
-      .attr("y", -32)
-      .attr("width", 64)
-      .attr("height", 64)
+      .attr("x", -20)
+      .attr("y", -20)
+      .attr("width", 40)
+      .attr("height", 40)
       .on("click", function(n){
         console.log("User clicked on node", n.name);
         tepath.push(n.name);
@@ -307,7 +307,7 @@ d3.json("sr_topology.json", function(error, json) {
       link.attr("d", function(d) {
         var dx = d.target.x - d.source.x,
             dy = d.target.y - d.source.y,
-            dr = 900/d.value;
+            dr = 800/d.value;
         return "M" +
             d.source.x + "," +
             d.source.y + "A" +

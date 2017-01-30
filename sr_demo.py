@@ -397,7 +397,8 @@ class AddRemoveRoutes(Process):
 			self.rel_path = "new_path_info.json"
 			self.script_dir = os.path.dirname(__file__)
 			self.abs_file_path = os.path.join(self.script_dir, self.rel_path)
-			self.logfile = open(self.abs_file_path,'r+')
+			self.logfile = open(self.abs_file_path,'w')
+			self.logfile.close()
 	def run(self):
 		PrimaryPathElementDictionary = {}
 		PrimaryPathList = []
