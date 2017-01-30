@@ -1,0 +1,351 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>SR Topology in Force Direct Diagram</title>
+<script>
+  function resizeIframe(obj) {
+    obj.style.height = 0;
+    obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
+  }
+</script>
+<head>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+<style>
+.w3-btn {width:400px;border:0.5px;}
+.w3-btn2 {width:200px;border:0.5px;}
+</style>
+
+<meta charset="utf-8">
+
+<div id='title'>
+  <h1 align="center">Logical Topological View of ISIS SR Enabled Nodes and Adjacencies</h1>
+</div>
+
+<div>
+  <span style="float:left;"> </span>
+  <fieldset>
+    <button onClick="history.go(0)"  class="w3-btn w3-hover-red">Refresh Topology - or shift+refresh broswer</button>
+    <div>
+      <br><label>Dest FEC</label>
+      <input id="dstFec" type="text" placeholder="Destination FEC" />
+
+      <label>  Dest FEC NH</label>
+      <input id="dstFecNH" type="text" placeholder="Destination FEC NH" />
+    </div>
+    <div>
+      <label>Dest Prefix</label>
+      <input id="dstPrefix" type="text" placeholder="Prefix x.x.x.x/yy" onsubmit="" />
+      <label>  Dest Next hop</label>
+      <input id="dstNH" type="text" placeholder="Destination Next Hop" onsubmit="" />
+    </div>
+    <div>
+      <input id="Primary" type="checkbox" name="Primary"/> Primary Path
+      <input id="Secondary" type="checkbox" name="Secondary" />Secondary Path  (Make sure one or the other is checked.  Primary actually pushes to the Router.  Secondary stores on Controller) <br><br>
+    </div>
+    <div id="curPath"></div>
+    <div>
+          <button onClick="window.tepath=[]; updatePathDisplay();"  class="w3-btn w3-hover-red">Clear Path (Display Only)</button>
+          <input id="ManualFECDest" type="text" placeholder="FEC Dest x.x.x.x" onsubmit="" />
+          <input id="ManualFECNH" type="text" placeholder=" Next Hop x.x.x.x" onsubmit="" />
+          <input id="ManualFECPath" type="text" placeholder="Label Path xxxxx xxxxx" onsubmit="" /><br>
+        <button onClick="addPath();"  class="w3-btn w3-hover-red">Submit Path Selected on Graph</button>
+        <button onClick="addManualPath();"  class="w3-btn w3-hover-red">Manual Label Path Add</button>
+    </div>
+
+  </fieldset>
+</div>
+
+<div>
+  <span style="float:left;"> </span>
+    <fieldset>
+      <label>FEC to Remove</label>
+      <input id="RemoveFEC" type="text" placeholder="FEC to Remove" onsubmit="" />
+        <button onClick="removeFEC();"  class="w3-btn2 w3-hover-green">Remove FEC      </button>
+      <label>Dest Route to Remove</label>
+      <input id="RemoveRoute" type="text" placeholder="Prefix x.x.x.x/yy" onsubmit="" />
+        <button onClick="removeRoute();"  class="w3-btn2 w3-hover-green">Remove Route</button>
+    </fieldset>
+</div>
+<style>
+
+#title{
+  align-items: center;
+    font-size: 10px;
+    background:#cccccc;
+    float:middle;
+}
+
+
+path.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 5px;
+}
+.link {
+  stroke: #ccc;
+}
+
+.node text {
+  pointer-events: none;
+  font: 20px sans-serif;
+  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff
+}
+
+</style>
+
+<body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script>
+
+
+
+var width = 1200,
+    height = 650;
+
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+svg.append("svg:defs").selectAll("marker")
+    .data(["end"])      // Different link/path types can be defined here
+  .enter().append("svg:marker")    // This section adds in the arrows
+    .attr("id", String)
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 22)
+    .attr("refY", -1.1)
+    .attr("markerWidth", 4)
+    .attr("markerHeight", 4)
+    .attr("orient", "auto")
+  .append("svg:path")
+    .attr("d", "M0,-5L10,0L0,5");
+
+
+var force = d3.layout.force()
+    .gravity(5)
+    .distance(185)
+    .charge(-180000)
+    .linkStrength(6)
+    force.alpha(0)
+    .size([width, height]);
+
+var drag = force.drag()
+    .on('dragstart', function(d) {
+      d3.select(this).classed('fixed', d.fixed = true);
+      force.stop();
+    })
+    .on('dragend', function() {
+      force.stop();
+    });
+
+window.tepath = [];
+
+function updatePathDisplay() {
+  document.getElementById("curPath").textContent = tepath.join(" -> ");
+  // get jquery as a <script>
+  // $.post('/backend', {path: path})
+}
+
+
+function addPath() {
+  var dstFec = document.getElementById("dstFec").value;
+  var dstPrefix = document.getElementById("dstPrefix").value;
+  var dstNH = document.getElementById("dstNH").value;
+  var dstFecNH = document.getElementById("dstFecNH").value;
+  var PrimaryBoolean = document.getElementById('Primary').checked;
+  var SecondaryBoolean = document.getElementById("Secondary").checked;
+  var ManualFECPath = "";
+  var RemoveFEC = "";
+  var RemoveRoute = "";
+  d3.xhr("/")
+    .header("Content-Type", "application/json")
+    .post(JSON.stringify({
+      dstPrefix: dstPrefix,
+      dstNH: dstNH,
+      fec: dstFec,
+      dstFecNH: dstFecNH,
+      path: tepath,
+      Primary: PrimaryBoolean,
+      ManualFECPath: ManualFECPath,
+      RemoveFEC: RemoveFEC,
+      RemoveRoute: RemoveRoute,
+      Secondary: SecondaryBoolean
+    }), function(){ alert('Path Programmed!'); });
+}
+
+function addManualPath() {
+  var dstPrefix = "";
+  var dstNH = "";
+  var PrimaryBoolean = document.getElementById('Primary').checked;
+  var SecondaryBoolean = document.getElementById("Secondary").checked;
+  var RemoveFEC = "";
+  var RemoveRoute = "";
+  var ManualFECPath = document.getElementById("ManualFECPath").value;
+  var ManualFECNH = document.getElementById("ManualFECNH").value;
+  var ManualFECDest = document.getElementById("ManualFECDest").value;
+  d3.xhr("/")
+    .header("Content-Type", "application/json")
+    .post(JSON.stringify({
+      dstPrefix: dstPrefix,
+      dstNH: dstNH,
+      fec: ManualFECDest,
+      dstFecNH: ManualFECNH,
+      ManualFECPath: ManualFECPath,
+      Primary: PrimaryBoolean,
+      RemoveFEC: RemoveFEC,
+      RemoveRoute: RemoveRoute,
+      Secondary: SecondaryBoolean
+    }), function(){ alert('Manual Path Programmed!'); });
+}
+
+function removeFEC() {
+  var dstFec = "";
+  var dstPrefix = "";
+  var dstNH = "";
+  var dstFecNH = "";
+  var PrimaryBoolean = "False";
+  var SecondaryBoolean = "False";
+  var ManualFECPath = "";
+  var RemoveFEC = document.getElementById("RemoveFEC").value;
+  var RemoveRoute = "";
+  d3.xhr("/")
+    .header("Content-Type", "application/json")
+    .post(JSON.stringify({
+      dstPrefix: dstPrefix,
+      dstNH: dstNH,
+      fec: dstFec,
+      dstFecNH: dstFecNH,
+      path: tepath,
+      ManualFECPath: ManualFECPath,
+      Primary: PrimaryBoolean,
+      RemoveFEC: RemoveFEC,
+      RemoveRoute: RemoveRoute,
+      Secondary: SecondaryBoolean
+    }), function(){ alert('Path Programmed!'); });
+}
+
+function removeRoute() {
+  var dstFec = "";
+  var dstPrefix = "";
+  var dstNH = "";
+  var dstFecNH = "";
+  var PrimaryBoolean = "False";
+  var SecondaryBoolean = "False";
+  var ManualFECPath = "";
+  var RemoveFEC = "";
+  var RemoveRoute = document.getElementById("RemoveRoute").value;
+  d3.xhr("/")
+    .header("Content-Type", "application/json")
+    .post(JSON.stringify({
+      dstPrefix: dstPrefix,
+      dstNH: dstNH,
+      fec: dstFec,
+      dstFecNH: dstFecNH,
+      path: tepath,
+      path: tepath,
+      ManualFECPath: ManualFECPath,
+      Primary: PrimaryBoolean,
+      RemoveFEC: RemoveFEC,
+      RemoveRoute: RemoveRoute,
+      Secondary: SecondaryBoolean
+    }), function(){ alert('Path Programmed!'); });
+}
+
+
+d3.json("sr_topology.json", function(error, json) {
+  if (error) throw error;
+
+  force
+      .nodes(json.nodes)
+      .links(json.links)
+      .start();
+
+  var link = svg.selectAll(".link")
+      .data(json.links)
+    .enter().append("path")
+      .attr("class", "link")
+      .attr("marker-end", "url(#end)")
+      .attr("width", 3)
+      .on("click",function(n){
+        console.log("User clicked on Link", n.id);
+        tepath.push(n.id);
+        updatePathDisplay();
+        console.log("path is now", tepath)
+      });
+
+  var node = svg.selectAll(".node")
+      .data(json.nodes)
+      .enter().append("g")
+      .attr("class", "node")
+      .call(force.drag());
+
+  node.append("image")
+      .attr("xlink:href", "router.png")
+      .attr("x", -32)
+      .attr("y", -32)
+      .attr("width", 64)
+      .attr("height", 64)
+      .on("click", function(n){
+        console.log("User clicked on node", n.name);
+        tepath.push(n.name);
+        updatePathDisplay();
+        console.log("path is now", tepath)
+      });
+
+  node.append("text")
+      .attr("dx", 0)
+      .attr("dy", 0)
+      .text(function(d) { return d.name })
+      .call(force.drag());
+
+
+
+  force.on("tick", function() {
+      link.attr("d", function(d) {
+        var dx = d.target.x - d.source.x,
+            dy = d.target.y - d.source.y,
+            dr = 900/d.value;
+        return "M" +
+            d.source.x + "," +
+            d.source.y + "A" +
+            dr + "," + dr + " 0 0,1 " +
+            d.target.x + "," +
+            d.target.y;
+        });
+
+
+    node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")";});
+  });
+});
+
+</script>
+
+
+<iframe>
+<!DOCTYPE html>
+  <html>
+  <head>
+  </head>
+  <body>
+      <script src = "http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+      <script>
+         $.ajax({
+            url: 'controller_output.json',
+            dataType: 'json',
+            cache: false,
+            success: function(data) {
+                console.log(data)
+            }
+         });
+      </script>
+  </body>
+</html>
+
+</iframe>
+<!-- Comment out
+<p>Controller Output:</p>
+<iframe src="https://172.24.73.61:4200" width="100%" height="300" frameBorder="0" scrolling="no">Browser not compatible. </iframe>
+--->
