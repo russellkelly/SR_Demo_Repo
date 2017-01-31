@@ -26,6 +26,7 @@ import errno
 import collections
 import multiprocessing
 import multiprocessing.queues
+from  __builtin__ import any as b_any
 import requests
 from flask import Flask, render_template, request
 
@@ -162,12 +163,16 @@ class Get_ISIS_SIDS(object):
 				Temp_Adj_SIDs.append(code)	
 		for node in Temp_Adj_SIDs:
 			#d = dict(e.split(":") for e in node.translate(None,"{}").split(","))
+			node = node.strip()
 			t = node.lstrip('{')
 			u = t.rstrip('}')
-			k,v = u.split(':')
-			d1[str(k)] = str(v)
-			Adj_SIDs.append(d1.copy())
-			del d1[k]
+			try:
+				k,v = u.split(':')
+				d1[str(k)] = str(v)
+				Adj_SIDs.append(d1.copy())
+				del d1[k]
+			except ValueError:
+				print('Ignoring: malformed line: "{}"'.format(u))
 		#pp(Adj_SIDs)	
 		return Adj_SIDs
 		
@@ -218,12 +223,16 @@ class Get_ISIS_SIDS(object):
 					Temp_Node_SIDs.append(code)
 		#pp(Temp_Node_SIDs)
 		for node in Temp_Node_SIDs:
+			node = node.strip()
 			t = node.lstrip('{')
 			u = t.rstrip('}')
-			k,v = u.split(':')
-			d2[str(k)] = str(v)
-			Node_SIDs.append(d2.copy())
-			del d2[k]
+			try:
+				k,v = u.split(':')
+				d2[str(k)] = str(v)
+				Node_SIDs.append(d2.copy())
+				del d2[k]
+			except ValueError:
+				print('Ignoring: malformed line: "{}"'.format(u))
 			#pp(d2)
 		#pp(Node_SIDs)
 		return Node_SIDs
@@ -366,7 +375,6 @@ class Backend_Flask(object):
 			return render_template('index.html')
 		if request.method=="POST":
 			data = request.get_json()
-			print data
 			self.rel_path = "new_path_info.json"
 			self.script_dir = os.path.dirname(__file__)
 			self.abs_file_path = os.path.join(self.script_dir, self.rel_path)
@@ -457,10 +465,9 @@ class AddRemoveRoutes(Process):
 					except(KeyError, ValueError):
 						print " You need to input space separated 6 Digit Labels!!!"
 						return
-				try:
 					
 		### Right - now kick off the parsing and storing of said POST variables.
-		
+				try:
 					if str(self.data['dstPrefix']):
 						currentpath = str(self.data['dstPrefix'])+' next-hop ' +str(self.data['dstNH'])
 						if PrefixList == []:
@@ -499,9 +506,11 @@ class AddRemoveRoutes(Process):
 									PrimaryPathList.remove(entry)
 									SecondaryPathList.append(entry)
 									PrimaryPathList.append(currentpath)
-								else:
-									PrimaryPathList.append(str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']')
-									
+								elif currentpath not in PrimaryPathList:
+									if b_any(current_fec_NH in x for x in PrimaryPathList):
+										pass
+									else:
+										PrimaryPathList.append(str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']')
 						except KeyError:
 							pass
 						

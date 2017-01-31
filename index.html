@@ -8,17 +8,55 @@
     obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
   }
 </script>
-<head>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
 <style>
 .w3-btn {width:400px;border:0.5px;}
 .w3-btn2 {width:200px;border:0.5px;}
+
+
+#title{
+  align-items: center;
+    font-size: 10px;
+    background:#cccccc;
+    float:middle;
+}
+
+
+path.link {
+  fill: none;
+  stroke: #666;
+  stroke-width: 5px;
+}
+.link {
+  stroke: #ccc;
+}
+
+.node text {
+  pointer-events: none;
+  font: 20px sans-serif;
+  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff
+}
+
+#pathList {
+  padding: 10px;
+  position: fixed;
+  background-color: white;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+}
+body {
+  margin-bottom: 200px; /* Make sure there's space to scroll in case of #pathList overlap */
+}
+
 </style>
 
 <meta charset="utf-8">
 
+</head>
+
+<body>
 <div id='title'>
   <h1 align="center">Logical Topological View of ISIS SR Enabled Nodes and Adjacencies</h1>
 </div>
@@ -68,42 +106,14 @@
         <button onClick="removeRoute();"  class="w3-btn2 w3-hover-green">Remove Route</button>
     </fieldset>
 </div>
-<style>
-
-#title{
-  align-items: center;
-    font-size: 10px;
-    background:#cccccc;
-    float:middle;
-}
-
-
-path.link {
-  fill: none;
-  stroke: #666;
-  stroke-width: 5px;
-}
-.link {
-  stroke: #ccc;
-}
-
-.node text {
-  pointer-events: none;
-  font: 20px sans-serif;
-  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff
-}
-
-</style>
-
-<body>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 <script src="//d3js.org/d3.v3.min.js"></script>
 <script>
 
 
 
-var width = 1200,
-    height = 650;
+var width = 750,
+    height = 625;
 
 
 var svg = d3.select("body").append("svg")
@@ -125,8 +135,8 @@ svg.append("svg:defs").selectAll("marker")
 
 
 var force = d3.layout.force()
-    .gravity(5)
-    .distance(185)
+    .gravity(6)
+    .distance(200)
     .charge(-180000)
     .linkStrength(6)
     force.alpha(0)
@@ -321,31 +331,47 @@ d3.json("sr_topology.json", function(error, json) {
   });
 });
 
+function createPathListText(list) {
+  var ret = ""
+  $.each(list, function(index, value) {
+    if (index > 0) ret += ", ";
+    ret += value;
+  });
+  return ret;
+}
+
+function updatePathTextList() {
+  $.ajax({
+     url: 'controller_output.json',
+     dataType: 'json',
+     cache: false,
+     success: function(data) {
+       var innerHtml = "";
+       innerHtml += "<h3>Paths</h3>";
+       innerHtml += "<div>";
+       innerHtml += "<span>Prefixes:</span>";
+       innerHtml += createPathListText(data.prefixes);
+       innerHtml += "</div><div>";
+       innerHtml += "<span>Primary:</span>";
+       innerHtml += createPathListText(data.primary);
+       innerHtml += "</div><div>";
+       innerHtml += "<span>Secondary:</span>";
+       innerHtml += createPathListText(data.secondary);
+       innerHtml += "</div>";
+       $("#pathList").html(innerHtml);
+     }
+  });
+}
+
+setInterval(updatePathTextList, 1000); // Update the list of paths once a second
+
 </script>
 
+<img src="SR_Demo.png" width="800" height="500" />
 
-<iframe>
-<!DOCTYPE html>
-  <html>
-  <head>
-  </head>
-  <body>
-      <script src = "http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-      <script>
-         $.ajax({
-            url: 'controller_output.json',
-            dataType: 'json',
-            cache: false,
-            success: function(data) {
-                console.log(data)
-            }
-         });
-      </script>
-  </body>
+<div id="pathList">
+
+</div>
+
+</body>
 </html>
-
-</iframe>
-<!-- Comment out
-<p>Controller Output:</p>
-<iframe src="https://172.24.73.61:4200" width="100%" height="300" frameBorder="0" scrolling="no">Browser not compatible. </iframe>
---->
