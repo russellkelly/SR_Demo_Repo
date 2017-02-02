@@ -7,6 +7,8 @@
     obj.style.height = 0;
     obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
   }
+
+
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
@@ -14,6 +16,9 @@
 .w3-btn {width:400px;border:0.5px;}
 .w3-btn2 {width:200px;border:0.5px;}
 
+.hidden{
+  display: none;
+}
 
 #title{
   align-items: center;
@@ -42,6 +47,7 @@ path.link {
   padding: 10px;
   position: fixed;
   background-color: white;
+  font-weight: bold;
   bottom: 0px;
   left: 0px;
   right: 0px;
@@ -106,13 +112,16 @@ body {
         <button onClick="removeRoute();"  class="w3-btn2 w3-hover-green">Remove Route</button>
     </fieldset>
 </div>
+
+
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 <script src="//d3js.org/d3.v3.min.js"></script>
+<div>
 <script>
 
 
 
-var width = 750,
+var width = 630,
     height = 625;
 
 
@@ -293,7 +302,7 @@ d3.json("sr_topology.json", function(error, json) {
       .call(force.drag());
 
   node.append("image")
-      .attr("xlink:href", "router.png")
+      .attr("xlink:href", "images/router.png")
       .attr("x", -20)
       .attr("y", -20)
       .attr("width", 40)
@@ -349,13 +358,13 @@ function updatePathTextList() {
        var innerHtml = "";
        innerHtml += "<h3>Paths</h3>";
        innerHtml += "<div>";
-       innerHtml += "<span>Prefixes:</span>";
+       innerHtml += "<span>Active Service Prefixes: </span>";
        innerHtml += createPathListText(data.prefixes);
        innerHtml += "</div><div>";
-       innerHtml += "<span>Primary:</span>";
+       innerHtml += "<span>Primary FEC Paths: </span>";
        innerHtml += createPathListText(data.primary);
        innerHtml += "</div><div>";
-       innerHtml += "<span>Secondary:</span>";
+       innerHtml += "<span>Secondary FEC Paths: </span>";
        innerHtml += createPathListText(data.secondary);
        innerHtml += "</div>";
        $("#pathList").html(innerHtml);
@@ -367,7 +376,117 @@ setInterval(updatePathTextList, 1000); // Update the list of paths once a second
 
 </script>
 
-<img src="SR_Demo.png" width="800" height="500" />
+<img id="myDIV" src="images/SR_Demo.png" style="float:right; display:block" width="800" height="600" />
+<img id="myDIV1" src="images/SR_ECMP.png" style="float:right; display:none;" width="800" height="600" />
+<img id="myDIV2" src="images/SR_Anycast.png" style="float:right; display:none;" width="800" height="600" />
+<img id="myDIV3" src="images/LDP_interop.png" style="float:right; display:none;" width="800" height="600" />
+<img id="myDIV4" src="images/SR_CBF.png" style="float:right; display:none;" width="800" height="600" />
+<img id="myDIV5" src="images/SR_MacroTE.png" style="float:right; display:none;" width="800" height="600" />
+<img id="myDIV6" src="images/SR_MicroTE.png" style="float:right; display:none;" width="800" height="600" />
+</div>
+<div>
+
+
+<button onclick="myFunction6()" aria-pressed="false" style="float:right;">SR Micro TE</button>
+<button onclick="myFunction5()" aria-pressed="false" style="float:right;">SR Macro TE</button>
+<button onclick="myFunction4()" aria-pressed="false" style="float:right;">SR CBF</button>
+<button onclick="myFunction3()" aria-pressed="false" style="float:right;">LDP Inter-Op</button>
+<button onclick="myFunction2()" aria-pressed="false" style="float:right;">SR Anycast</button>
+<button onclick="myFunction1()" aria-pressed="false" style="float:right;">SR ECMP</button>
+<button onclick="myFunction()" aria-pressed="true" style="float:right;">Base Demo</button>
+
+
+</div>
+
+<style>
+
+button,
+[role="button"] {
+    padding: 3px;
+    border: 1px solid #CCC;
+}
+
+button[aria-pressed="true"],
+[role="button"][aria-pressed="true"] {
+    border: 2px solid #000;
+}
+
+</style>
+
+<script>
+
+function toggleButton(element) {
+  // Check to see if the button is pressed
+  var pressed = (element.getAttribute("aria-pressed") === "true");
+  // Change aria-pressed to the opposite state
+  element.setAttribute("aria-pressed", !pressed);
+}
+
+
+function myFunction() {
+    var x = document.getElementById('myDIV');
+    toggleButton(event.target);
+    if (x.style.display === 'block') {
+        x.style.display = 'none';
+    } else {
+        x.style.display = 'block';
+    }
+}
+function myFunction1() {
+    toggleButton(event.target);
+    var x = document.getElementById('myDIV1');
+    if (x.style.display === 'block') {
+        x.style.display = 'none';
+    } else {
+        x.style.display = 'block';
+    }
+}
+function myFunction2() {
+    toggleButton(event.target);
+    var x = document.getElementById('myDIV2');
+    if (x.style.display === 'block') {
+        x.style.display = 'none';
+    } else {
+        x.style.display = 'block';
+    }
+}
+function myFunction3() {
+    toggleButton(event.target);
+    var x = document.getElementById('myDIV3');
+    if (x.style.display === 'block') {
+        x.style.display = 'none';
+    } else {
+        x.style.display = 'block';
+    }
+}
+function myFunction4() {
+    toggleButton(event.target);
+    var x = document.getElementById('myDIV4');
+    if (x.style.display === 'block') {
+        x.style.display = 'none';
+    } else {
+        x.style.display = 'block';
+    }
+}
+function myFunction5() {
+    toggleButton(event.target);
+    var x = document.getElementById('myDIV5');
+    if (x.style.display === 'block') {
+        x.style.display = 'none';
+    } else {
+        x.style.display = 'block';
+    }
+}
+function myFunction6() {
+    toggleButton(event.target);
+    var x = document.getElementById('myDIV6');
+    if (x.style.display === 'block') {
+        x.style.display = 'none';
+    } else {
+        x.style.display = 'block';
+    }
+}
+</script>
 
 <div id="pathList">
 
