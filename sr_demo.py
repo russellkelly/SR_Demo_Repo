@@ -34,15 +34,17 @@ from flask import Flask, render_template, request
 
 C = "show isis database detail"
 
-### Program Variables.
+### Program Variables.  #############################################
 
-###  System has a 1 second wait at end - so switch doesnt blow.
+###  System has a 1 second wait at end - so switch doesn't blow.
 
 COMMANDS = [C]
 CONTROLLER_IP = '172.24.73.61'
 DEADTIMECOUNTER = 1
 DEADTIMETIMER = 0.5
+BGP_LU_Peer = '172.24.74.46'
 
+#####################################################################
 
 def parse_args(argv):
     nodes = []
@@ -54,7 +56,7 @@ def parse_args(argv):
     parser.add_option('-u', help='Username. Mandatory option', dest='username', action='store')
     parser.add_option('-p', help='Password. Mandatory option', dest='password', action='store')
     parser.add_option('-r', help='explicit refresh rate running the command. By default the programs sets the system default refresh to 1 second,', dest='refresh_rate', type=int, default=1, action='store')
-    parser.add_option('-a', help='One or more hostnames (or IP addresses) of the switches to poll.  Comma separated.  Mandatory option with multiple arguments', dest='hostnames', action='store')
+    parser.add_option('-a', help='One hostname (or IP address) of the ISIS DB Poll switch. Mandatory option with single argument', dest='hostnames', action='store')
     (opts, args) = parser.parse_args()
     mandatories = ['username', 'password', 'hostnames']
     for m in mandatories:
@@ -254,9 +256,9 @@ class Get_SIDs_DICTS(Process):
 	def run(self):
 		while True:
 			self.refresh_rate,self.switches, self.hostname_list  = parse_args(sys.argv[1:])
-			self.print_counter(self.refresh_rate,self.switches, self.hostname_list)
+			self.build_graph_dicts(self.refresh_rate,self.switches, self.hostname_list)
 
-	def print_counter(self, refresh_rate, switches, hostname_list):
+	def build_graph_dicts(self, refresh_rate, switches, hostname_list):
 		while True:
 			try:
 				sleep(1)
@@ -273,7 +275,7 @@ class Get_SIDs_DICTS(Process):
 		### Actually we call class get_isis and use parse_isis_adj and parse_isis_node
 		### To connect to the single "exporter" and it parses the returned output
 		
-				isis_switch = switches.get('lf274')
+				isis_switch = switches.values()[0]
 				get_isis = Get_ISIS_SIDS()
 				Adj_SIDs = get_isis.parse_isis_adj(isis_switch)
 				Node_SIDs = get_isis.parse_isis_node(isis_switch)
@@ -401,6 +403,7 @@ class AddRemoveRoutes(Process):
 	
 	def __init__(self):
 			super(AddRemoveRoutes, self).__init__()
+			self.refresh_rate,self.switches, self.hostname_list  = parse_args(sys.argv[1:])
 			self.data = []
 			self.rel_path = "new_path_info.json"
 			self.script_dir = os.path.dirname(__file__)
@@ -427,7 +430,7 @@ class AddRemoveRoutes(Process):
 		while True:
 			try:
 				print "Running Main Routine.... All engines are go........"	
-				self.isis_switch = switches.get('lf274')
+				self.isis_switch = self.switches.values()[0]
 				self.get_isis = Get_ISIS_SIDS()
 				self.Adj_SIDs = self.get_isis.parse_isis_adj(self.isis_switch)
 				self.Node_SIDs = self.get_isis.parse_isis_node(self.isis_switch)
@@ -589,9 +592,7 @@ class AddRemoveRoutes(Process):
 		# Search the primary FEC Path list- where one or more labels are missing from the
 		# path.  Add these paths to the list TopoChangeRemovePathList (to be used later)
 		
-				print deadcounter
-				print DEADTIMECOUNTER
-				print count_list
+
 				path_ip_address_list = []
 				for path in PrimaryPathList:
 					path_sids = re.findall(r"\b\d{6}\b", path)
@@ -604,10 +605,7 @@ class AddRemoveRoutes(Process):
 						for path in PrimaryPathList:
 							path_sids = re.findall(r"\b\d{6}\b", path)
 							if set(path_sids) < set(self.AllActiveSIDs):
-								print "yeah the labels came back resetting dead timer!!!!"
 								deadcounter = DEADTIMECOUNTER
-								count_list.append("dead counter  was 2 and resetting to 1")
-								count_list.append(deadcounter)
 								pass
 							else:
 								TopoChangeRemovePathList.append(path)
@@ -620,10 +618,8 @@ class AddRemoveRoutes(Process):
 		
 					else:
 						sleep(DEADTIMETIMER)
-						print "waiting to see if the labels are back.  Incrementing dead timer!!!!"
-						count_list.append("dead counter  was 1 incrementing to 2")
 						deadcounter +=1
-				print path_ip_address_list
+				#print path_ip_address_list
 
 		# First Step on secondary - Search the primary secondary Path list- if one or more labels are missing from the
 		# path remove it. 
@@ -643,7 +639,6 @@ class AddRemoveRoutes(Process):
 					for path in SecondaryPathList:
 						secondpath_first_ip = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', path).group()
 						if secondpath_first_ip in path:
-							print "here is the secondpath first ip to add" + str(path)
 							SecondaryPathList.remove(path)
 							TopoChangeAddPathList.append(path)
 
@@ -655,7 +650,6 @@ class AddRemoveRoutes(Process):
 		## Now Program the changed Primary FEC Routes: Program Them!!!  Skip if nothing changed completely.
 				
 				if len(OldPrimaryPathList) == len(PrimaryPathList) and cmp(PrimaryPathList, OldPrimaryPathList) == 0:
-					print("No Change in the Route Table\n")
 					pass
 				
 				elif len(OldPrimaryPathList) == len(PrimaryPathList) and cmp(PrimaryPathList, OldPrimaryPathList) != 0:
@@ -768,17 +762,17 @@ class AddRemoveRoutes(Process):
 		###  Just print out the paths for visibility
 		
 				PrefixDict = []
-				print"here is the active Service prefix list"
-				pp(PrefixList)
+				# print"here is the active Service prefix list"
+				# pp(PrefixList)
 				PrefixDict = dict(enumerate(PrefixList))
-				print PrefixDict
-				print"here is the current primary path list"
-				pp(PrimaryPathList)
+				# print PrefixDict
+				# print"here is the current primary path list"
+				# pp(PrimaryPathList)
 				PrimaryPathDict = dict(enumerate(PrimaryPathList))
-				print"here is the old primary path list"
-				pp(OldPrimaryPathList)
-				print"here is the current secondary path list"
-				pp(SecondaryPathList)
+				# print"here is the old primary path list"
+				# pp(OldPrimaryPathList)
+				# print"here is the current secondary path list"
+				# pp(SecondaryPathList)
 				SecondaryPathDict = dict(enumerate(SecondaryPathList))
 				
 				
@@ -846,7 +840,7 @@ if __name__ == "__main__":
 		   pass
 	except KeyboardInterrupt:
 		controller_ip = CONTROLLER_IP
-		r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'neighbor 172.24.74.46 teardown 2')})
+		r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'neighbor '+str(BGP_LU_Peer)+  ' teardown 2')})
 		sleep(.5)
 		print " \n\n Hard Clearing the Controller BGP peering Session"
 		p1.terminate()
