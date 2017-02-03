@@ -27,16 +27,16 @@ RUN useradd -m demo && echo "demo:demo" | chpasswd && adduser demo sudo
 
 USER root
 
-RUN mkdir /home/demo/sr-demo
-ENV HOME /home/demo/sr-demo
-WORKDIR /home/demo/sr-demo
+RUN mkdir -p /home/demos/sr-demo
+ENV HOME /home/demos/sr-demo
+WORKDIR /home/demos/sr-demo
 
 RUN git clone https://github.com/Exa-Networks/exabgp.git
-WORKDIR /home/demo/sr-demo/exabgp
+WORKDIR /home/demos/sr-demos/exabgp
 RUN git checkout master
 RUN chmod +x setup.py
 RUN sudo ./setup.py install
-WORKDIR /home/demo/sr-demo
+WORKDIR /home/demos/sr-demo
 
 
 EXPOSE 179
