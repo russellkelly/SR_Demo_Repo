@@ -22,6 +22,7 @@ RUN apt-get clean
 RUN pip install flask
 RUN pip install pyeapi
 RUN pip install jsonrpc
+RUN pip install jsonrpclib
 
 RUN useradd -m demo && echo "demo:demo" | chpasswd && adduser demo sudo
 
@@ -32,7 +33,7 @@ ENV HOME /home/demos/sr-demo
 WORKDIR /home/demos/sr-demo
 
 RUN git clone https://github.com/Exa-Networks/exabgp.git
-WORKDIR /home/demos/sr-demos/exabgp
+WORKDIR /home/demos/sr-demo/exabgp
 RUN git checkout master
 RUN chmod +x setup.py
 RUN sudo ./setup.py install
@@ -40,9 +41,9 @@ WORKDIR /home/demos/sr-demo
 
 
 EXPOSE 179
-EXPOSE 5000
-EXPOSE 5001
-EXPOSE 4200
+EXPOSE 5002
+EXPOSE 5003
+EXPOSE 4201
 
 COPY exabgp.env /usr/local/etc/exabgp/exabgp.env
 
