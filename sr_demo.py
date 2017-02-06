@@ -39,7 +39,7 @@ C = "show isis database detail"
 ###  System has a 1 second wait at end - so switch doesn't blow.
 
 COMMANDS = [C]
-CONTROLLER_IP = '192.168.1.2'
+CONTROLLER_IP = '172.24.73.61'
 DEADTIMECOUNTER = 1
 DEADTIMETIMER = 0.5
 BGP_LU_Peer = '172.24.74.46'
