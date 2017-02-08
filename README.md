@@ -155,10 +155,15 @@ Now one can run controller:
 
         make demo
         python sr_demo.py -u <eAPI username> -p <eAPI password> -a <ISIS DB Topology Export Router IP>
+        
+
+Now browse to the IP address of the VM or local machine where docker is installed, on port 5003
+
+http://<localhost> or <VM IP>:5003
 
 
-Running the demo in a VM or a BMS
-===============================
+Running the demo in a VM or a BMS without docker
+=================================================
 
 Build an Ubuntu BMS, or VM and add all requirements per the Dockerfile (detailed below - one can use the Makefile):
 
@@ -194,4 +199,5 @@ Build an Ubuntu BMS, or VM and add all requirements per the Dockerfile (detailed
 
         useradd -m demo && echo "demo:demo" | chpasswd && adduser demo sudo
 
-Once the git repository has been cloned locally follow the same instructions above to configure the files and ru the demo.
+Once the git repository has been cloned locally follow the same instructions above to configure the files and run the demo; 
+except the IP address of the controller (the VM EXABGP is installed on) will need to be specified in srdemo.conf and sr_demo.py in addition to the ingress LER IP.
