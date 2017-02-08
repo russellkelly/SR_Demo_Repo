@@ -39,7 +39,7 @@ C = "show isis database detail"
 ###  System has a 1 second wait at end - so switch doesn't blow.
 
 COMMANDS = [C]
-CONTROLLER_IP = '172.24.73.61'
+CONTROLLER_IP = '192.168.1.2'
 DEADTIMECOUNTER = 1
 DEADTIMETIMER = 0.5
 BGP_LU_Peer = '172.24.74.46'
@@ -490,9 +490,10 @@ class AddRemoveRoutes(Process):
 							Path_String = ' '.join(self.data['path'])
 							currentpath = str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']'
 							current_fec_NH = str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH'])
+							current_fec = str(self.data['fec'])
 							
-		### Do a couple of funky operations.  1) If the currentpath is in Primary path list - skip. 2) If the FEC+NH are the Same
-		### The put the "latest" in Primary and relegate the old one to secondary.  This keeps the rotuer and the controller in sync.
+		### Do a couple of funky operations.  1) If the currentpath is in Primary path list - skip. 2) If the FEC  are the Same
+		### The put the "latest" in Primary and relegate the current primary to secondary.  This keeps the router and the controller in sync.
 		## As the router will always take the latest as advertised from exabgp. 3) Else - just add currentpath to PrimaryPath List
 		
 							if PrimaryPathList == []:
@@ -500,17 +501,17 @@ class AddRemoveRoutes(Process):
 							for entry in PrimaryPathList:
 								if currentpath in PrimaryPathList:
 									pass
-								elif current_fec_NH in entry and currentpath in SecondaryPathList:
+								elif current_fec in entry and currentpath in SecondaryPathList:
 									SecondaryPathList.remove(currentpath)
 									PrimaryPathList.append(currentpath)
 									PrimaryPathList.remove(entry)
 									SecondaryPathList.append(entry)
-								elif current_fec_NH in entry and currentpath not in SecondaryPathList:
+								elif current_fec in entry and currentpath not in SecondaryPathList:
 									PrimaryPathList.remove(entry)
 									SecondaryPathList.append(entry)
 									PrimaryPathList.append(currentpath)
 								elif currentpath not in PrimaryPathList:
-									if b_any(current_fec_NH in x for x in PrimaryPathList):
+									if b_any(current_fec in x for x in PrimaryPathList):
 										pass
 									else:
 										PrimaryPathList.append(str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']')
@@ -642,7 +643,16 @@ class AddRemoveRoutes(Process):
 							SecondaryPathList.remove(path)
 							TopoChangeAddPathList.append(path)
 
-							
+		#### Now update Primary Path list for Visibility.
+					
+				for path in TopoChangeAddPathList:
+					PrimaryPathList.append(path)
+				for path in TopoChangeRemovePathList:
+					PrimaryPathList.remove(path)
+					
+				TopoChangeAddPathList = []
+				TopoChangeRemovePathList = []
+				
 		## We now have the primary table with reoved routes so len(OldPrimaryPathList) >= len(PrimaryPathList) should pick up the withdraw routes
 		## for the path routes.  We also have TopoChangeAddPathList and TopoChangeRemovePathList we need to action below.  We dont add these to the
 		## primaryPath list until after the Paths are added/removed
@@ -689,34 +699,8 @@ class AddRemoveRoutes(Process):
 							sleep(.2)
 							print 'announce route '+str(route)
 							
-		#### Now withdraw the routes from Topology Change (arista only has one active path - so matching on next hop should be fine )
-					
-				if TopoChangeRemovePathList != []:
-					for route in TopoChangeRemovePathList:
-						path_copy = copy.deepcopy(route)
-						withdraw_ip = path_copy.split("next-hop", 1)[0]
-						r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'withdraw route ' + str(withdraw_ip) +' label [800000]''\n')})
-						sleep(.2)
-						print 'withdraw route ' + str(withdraw_ip) +'label [800000]''\n'
-
-		#### Now add the routes from the topology change list.		
-
-				if TopoChangeAddPathList != []:
-					for route in TopoChangeAddPathList:
-						r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'announce route '+str(route))})
-						sleep(.2)
-						print 'announce route '+str(route)
-						
 			
-		#### Now update Primary Path list for Visibility.
-					
-				for path in TopoChangeAddPathList:
-					PrimaryPathList.append(path)
-				for path in TopoChangeRemovePathList:
-					PrimaryPathList.remove(path)
-					
-				TopoChangeAddPathList = []
-				TopoChangeRemovePathList = []
+
 				
 		### Final Step (from above:  Search the Active Service prefixes - and if there is no route in the primary or
 		### secondary table with it's NH - then use the default, or remove it.  I havent decided yet.
