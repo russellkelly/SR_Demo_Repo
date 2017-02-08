@@ -42,7 +42,7 @@ COMMANDS = [C]
 CONTROLLER_IP = '192.168.1.2'
 DEADTIMECOUNTER = 1
 DEADTIMETIMER = 0.5
-BGP_LU_Peer = '172.24.74.46'
+BGP_LU_Peer = 'xxx.xxx.xxx.xxx'
 
 #####################################################################
 
