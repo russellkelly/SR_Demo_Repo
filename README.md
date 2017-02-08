@@ -89,9 +89,6 @@ monitor_interface.py
           This script continually monitors interfaces in one, 
           or more Arista devices. 
 
-          ```
-          'monitor interface traffic'
-          ```
           I created this program to allow one or a number of switches to be monitored at 
           once, running on-box or off, and monitoring multiple specifically defined 
           interfaces or all of them, and the ability to define variables like packet count, 
@@ -99,7 +96,6 @@ monitor_interface.py
 
           See the help below:
 
-          ```
           Usage: monitor_interfaces.py [options]
 
           Options:
@@ -129,22 +125,18 @@ monitor_interface.py
                               Eth1,Eth7,Eth21-45
 
 
-          ```
-
-          As an example if I want to monitor devices lf275,fm213,fm382, but only 
+          As an example if I want to monitor devices lf275,fm213 but only 
           interfaces Eth2,4 and range 41-48, I want to show packet count and and KBps count 
           I would run the follwoing:
 
-          ```
-          python monitor_interfaces.py -u admin -p admin -r 10 -a lf275,fm213,fm382 --count_packet  -b -i Eth1,Eth2, Eth41-48
-          ```
+          
+          python monitor_interfaces.py -u admin -p admin -r 10 -a lf275,fm213 --count_packet  -b -i Eth1,Eth2, Eth41-48
+          
 
           For no KBps count and all interfaces over the rate of 10pps:
 
-
-          ```
           python monitor_interfaces.py -u admin -p admin -r 10 -a lf275,fm213,fm382 --count_packet
-          ```
+
 
 
 Running the demo in a container
