@@ -159,7 +159,7 @@ Now one can run controller:
 
 Now browse to the IP address of the VM or local machine where docker is installed, on port 5003
 
-http://<localhost> or <VM IP>:5003
+http://"localhost" or "VM IP":5003
 
 
 Running the demo in a VM or a BMS without docker
