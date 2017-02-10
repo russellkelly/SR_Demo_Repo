@@ -6,7 +6,6 @@ build :
 
 
 base-container:
-	#python RenderASBRConfigs.py
 	docker network create --driver=bridge --subnet=192.168.1.0/24 sr-net
 	docker run -d -it --network=sr-net --ip=192.168.1.2 --dns=8.8.8.8 \
 	--volume `pwd`:/home/demos/sr-demo \
