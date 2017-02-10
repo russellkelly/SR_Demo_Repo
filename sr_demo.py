@@ -686,9 +686,11 @@ class AddRemoveRoutes(Process):
 						if route not in PrimaryPathList:
 							path_copy = copy.deepcopy(route)
 							withdraw_ip = path_copy.split("next-hop", 1)[0]
-							r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'withdraw route ' + str(withdraw_ip) +' label [800000]''\n')})
+							ip_list = re.findall( r'[0-9]+(?:\.[0-9]+){3}', path_copy )
+							next_hop_ip = ip_list[1]
+							r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'withdraw route ' + str(withdraw_ip) +' next-hop ' + str(next_hop_ip)+ ' label [800000]''\n')})
 							sleep(.2)
-							print 'withdraw route ' + str(withdraw_ip) +'label [800000]''\n'
+							print 'withdraw route ' + str(withdraw_ip) +' next-hop ' + str(next_hop_ip)+ ' label [800000]''\n'
 	
 	
 				elif len(OldPrimaryPathList) < len(PrimaryPathList):
