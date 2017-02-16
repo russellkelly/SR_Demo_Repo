@@ -38,6 +38,7 @@ The srdemo will delete upon exit.  The srbase container will not.  To stop and r
         make clean
 
 
+All links in the ISIS configuration need to be configured as p2p - isis network point-to-point
 
 Below is some details on what each file does:
 
