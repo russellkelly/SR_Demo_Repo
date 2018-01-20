@@ -2,14 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>SR Topology in Force Direct Diagram</title>
-<script>
-  function resizeIframe(obj) {
-    obj.style.height = 0;
-    obj.style.height = obj.contentWindow.document.body.scrollHeight + 'px';
-  }
 
-
-</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
 <style>
@@ -53,7 +46,7 @@ path.link {
   right: 0px;
 }
 body {
-  margin-bottom: 200px; /* Make sure there's space to scroll in case of #pathList overlap */
+  margin-bottom: 100px; /* Make sure there's space to scroll in case of #pathList overlap */
 }
 
 </style>
@@ -72,11 +65,20 @@ body {
   <fieldset>
     <button onClick="history.go(0)"  class="w3-btn w3-hover-red">Refresh Topology - or shift+refresh broswer</button>
     <div>
+      <label>LER</label>
+      <input id="dstLER" type="text" placeholder="LER To Push To x.x.x.x" />
       <br><label>Dest FEC</label>
       <input id="dstFec" type="text" placeholder="Destination FEC" />
-
       <label>  Dest FEC NH</label>
       <input id="dstFecNH" type="text" placeholder="Destination FEC NH" />
+      <label>  Add Path ID</label>
+      <select id="FECPathID">
+  <option value="0.0.0.0">None</option>
+  <option value="0.0.0.1">1</option>
+  <option value="0.0.0.2">2</option>
+  <option value="0.0.0.3">3</option>
+  
+</select>
     </div>
     <div>
       <label>Dest Prefix</label>
@@ -91,11 +93,20 @@ body {
     <div id="curPath"></div>
     <div>
           <button onClick="window.tepath=[]; updatePathDisplay();"  class="w3-btn w3-hover-red">Clear Path (Display Only)</button>
+          <label>  Manual FEC Push</label>
+          <input id="ManualdstLER" type="text" placeholder="LER To Push To x.x.x.x" onsubmit="" />
           <input id="ManualFECDest" type="text" placeholder="FEC Dest x.x.x.x" onsubmit="" />
-          <input id="ManualFECNH" type="text" placeholder=" Next Hop x.x.x.x" onsubmit="" />
+          <label>  Add Path ID</label>
+          <select id="ManualFECPathID">
+            <option value="0.0.0.0">None</option>
+            <option value="0.0.0.1">1</option>
+            <option value="0.0.0.2">2</option>
+            <option value="0.0.0.3">3</option>
+          </select>
+          <input id="ManualFECNH" type="text" placeholder="Next Hop x.x.x.x" onsubmit="" />
           <input id="ManualFECPath" type="text" placeholder="Label Path xxxxx xxxxx" onsubmit="" /><br>
-        <button onClick="addPath();"  class="w3-btn w3-hover-red">Submit Path Selected on Graph</button>
-        <button onClick="addManualPath();"  class="w3-btn w3-hover-red">Manual Label Path Add</button>
+        <button onClick="addPath();"  class="w3-btn w3-hover-green">Submit Path Selected on Graph</button>
+        <button onClick="addManualPath();"  class="w3-btn w3-hover-green">Manual Label Path Add</button>
     </div>
 
   </fieldset>
@@ -104,12 +115,21 @@ body {
 <div>
   <span style="float:left;"> </span>
     <fieldset>
+      <input id="dstLERFECRemove" type="text" placeholder="LER To Push To x.x.x.x" onsubmit="" />
       <label>FEC to Remove</label>
       <input id="RemoveFEC" type="text" placeholder="FEC to Remove" onsubmit="" />
-        <button onClick="removeFEC();"  class="w3-btn2 w3-hover-green">Remove FEC      </button>
+      <label>  Add Path ID</label>
+      <select id="FECPathIDManualRemove">
+        <option value="0.0.0.0">None</option>
+        <option value="0.0.0.1">1</option>
+        <option value="0.0.0.2">2</option>
+        <option value="0.0.0.3">3</option>
+      </select>
+        <button onClick="removeFEC();"  class="w3-btn2 w3-hover-red">Remove FEC      </button>
+      <input id="dstLERPrefixRemove" type="text" placeholder="LER To Push To x.x.x.x" onsubmit="" />
       <label>Dest Route to Remove</label>
       <input id="RemoveRoute" type="text" placeholder="Prefix x.x.x.x/yy" onsubmit="" />
-        <button onClick="removeRoute();"  class="w3-btn2 w3-hover-green">Remove Route</button>
+        <button onClick="removeRoute();"  class="w3-btn2 w3-hover-red">Remove Route</button>
     </fieldset>
 </div>
 
@@ -121,8 +141,8 @@ body {
 
 
 
-var width = 640,
-    height = 625;
+var width = 1500,
+    height = 900;
 
 
 var svg = d3.select("body").append("svg")
@@ -144,10 +164,11 @@ svg.append("svg:defs").selectAll("marker")
 
 
 var force = d3.layout.force()
-    .gravity(6)
-    .distance(200)
-    .charge(-180000)
-    .linkStrength(6)
+    .gravity(0.7)
+    .distance(250)
+    .charge(-20000)
+    .linkStrength(0.7);
+    force.friction(0.5);
     force.alpha(0)
     .size([width, height]);
 
@@ -172,22 +193,32 @@ function updatePathDisplay() {
 function addPath() {
   var dstFec = document.getElementById("dstFec").value;
   var dstPrefix = document.getElementById("dstPrefix").value;
+  var FECPathID = document.getElementById("FECPathID").value;
+  var dstLER = document.getElementById("dstLER").value;
   var dstNH = document.getElementById("dstNH").value;
   var dstFecNH = document.getElementById("dstFecNH").value;
   var PrimaryBoolean = document.getElementById('Primary').checked;
   var SecondaryBoolean = document.getElementById("Secondary").checked;
   var ManualFECPath = "";
+  var ManualdstLER = "";
+  var dstLERFECRemove = "";
+  var dstLERPrefixRemove = "";
   var RemoveFEC = "";
   var RemoveRoute = "";
   d3.xhr("/")
     .header("Content-Type", "application/json")
     .post(JSON.stringify({
       dstPrefix: dstPrefix,
+      dstLER: dstLER,
+      ManualdstLER: ManualdstLER,
+      dstLERFECRemove: dstLERFECRemove,
+      dstLERPrefixRemove: dstLERPrefixRemove,
       dstNH: dstNH,
       fec: dstFec,
       dstFecNH: dstFecNH,
       path: tepath,
       Primary: PrimaryBoolean,
+      FECPathID: FECPathID,
       ManualFECPath: ManualFECPath,
       RemoveFEC: RemoveFEC,
       RemoveRoute: RemoveRoute,
@@ -196,13 +227,18 @@ function addPath() {
 }
 
 function addManualPath() {
-  var dstPrefix = "";
-  var dstNH = "";
+  var dstPrefix = document.getElementById("dstPrefix").value;
+  var dstNH = document.getElementById("dstNH").value;
   var PrimaryBoolean = document.getElementById('Primary').checked;
   var SecondaryBoolean = document.getElementById("Secondary").checked;
   var RemoveFEC = "";
   var RemoveRoute = "";
   var ManualFECPath = document.getElementById("ManualFECPath").value;
+  var ManualFECPathID = document.getElementById("ManualFECPathID").value;
+  var ManualdstLER = document.getElementById("ManualdstLER").value;
+  var dstLER = "";
+  var dstLERFECRemove = "";
+  var dstLERPrefixRemove = "";
   var ManualFECNH = document.getElementById("ManualFECNH").value;
   var ManualFECDest = document.getElementById("ManualFECDest").value;
   d3.xhr("/")
@@ -210,9 +246,14 @@ function addManualPath() {
     .post(JSON.stringify({
       dstPrefix: dstPrefix,
       dstNH: dstNH,
+      dstLER: dstLER,
+      ManualdstLER: ManualdstLER,
+      dstLERFECRemove: dstLERFECRemove,
+      dstLERPrefixRemove: dstLERPrefixRemove,
       fec: ManualFECDest,
       dstFecNH: ManualFECNH,
       ManualFECPath: ManualFECPath,
+      ManualFECPathID: ManualFECPathID,
       Primary: PrimaryBoolean,
       RemoveFEC: RemoveFEC,
       RemoveRoute: RemoveRoute,
@@ -228,17 +269,27 @@ function removeFEC() {
   var PrimaryBoolean = "False";
   var SecondaryBoolean = "False";
   var ManualFECPath = "";
+  var ManualFECPathID = document.getElementById("FECPathIDManualRemove").value;
   var RemoveFEC = document.getElementById("RemoveFEC").value;
   var RemoveRoute = "";
+  var ManualdstLER = "";
+  var dstLER = "";
+  var dstLERFECRemove = document.getElementById("dstLERFECRemove").value;
+  var dstLERPrefixRemove = "";
   d3.xhr("/")
     .header("Content-Type", "application/json")
     .post(JSON.stringify({
       dstPrefix: dstPrefix,
       dstNH: dstNH,
       fec: dstFec,
+      dstLER: dstLER,
+      ManualdstLER: ManualdstLER,
+      dstLERFECRemove: dstLERFECRemove,
+      dstLERPrefixRemove: dstLERPrefixRemove,
       dstFecNH: dstFecNH,
       path: tepath,
       ManualFECPath: ManualFECPath,
+      ManualFECPathID: ManualFECPathID,
       Primary: PrimaryBoolean,
       RemoveFEC: RemoveFEC,
       RemoveRoute: RemoveRoute,
@@ -254,8 +305,13 @@ function removeRoute() {
   var PrimaryBoolean = "False";
   var SecondaryBoolean = "False";
   var ManualFECPath = "";
+  var ManualFECPathID = "";
   var RemoveFEC = "";
   var RemoveRoute = document.getElementById("RemoveRoute").value;
+  var ManualdstLER = "";
+  var dstLER = "";
+  var dstLERFECRemove = "";
+  var dstLERPrefixRemove = document.getElementById("dstLERFECRemove").value;
   d3.xhr("/")
     .header("Content-Type", "application/json")
     .post(JSON.stringify({
@@ -264,8 +320,12 @@ function removeRoute() {
       fec: dstFec,
       dstFecNH: dstFecNH,
       path: tepath,
-      path: tepath,
+      dstLER: dstLER,
+      ManualdstLER: ManualdstLER,
+      dstLERFECRemove: dstLERFECRemove,
+      dstLERPrefixRemove: dstLERPrefixRemove,
       ManualFECPath: ManualFECPath,
+      ManualFECPathID: ManualFECPathID,
       Primary: PrimaryBoolean,
       RemoveFEC: RemoveFEC,
       RemoveRoute: RemoveRoute,
@@ -292,7 +352,7 @@ d3.json("sr_topology.json", function(error, json) {
         console.log("User clicked on Link", n.id);
         tepath.push(n.id);
         updatePathDisplay();
-        console.log("path is now", tepath)
+        console.log("path is now", tepath);
       });
 
   var node = svg.selectAll(".node")
@@ -311,7 +371,7 @@ d3.json("sr_topology.json", function(error, json) {
         console.log("User clicked on node", n.name);
         tepath.push(n.name);
         updatePathDisplay();
-        console.log("path is now", tepath)
+        console.log("path is now", tepath);
       });
 
   node.append("text")
@@ -324,9 +384,7 @@ d3.json("sr_topology.json", function(error, json) {
 
   force.on("tick", function() {
       link.attr("d", function(d) {
-        var dx = d.target.x - d.source.x,
-            dy = d.target.y - d.source.y,
-            dr = 800/d.value;
+        var dr = 800/d.value;
         return "M" +
             d.source.x + "," +
             d.source.y + "A" +
@@ -341,7 +399,7 @@ d3.json("sr_topology.json", function(error, json) {
 });
 
 function createPathListText(list) {
-  var ret = ""
+  var ret = "";
   $.each(list, function(index, value) {
     if (index > 0) ret += ", ";
     ret += value;
@@ -374,29 +432,19 @@ function updatePathTextList() {
 
 setInterval(updatePathTextList, 1000); // Update the list of paths once a second
 
+
+
 </script>
 
-<img id="myDIV" src="images/SR_Demo.png" style="float:right; display:block" width="800" height="600" />
-<img id="myDIV1" src="images/SR_ECMP.png" style="float:right; display:none;" width="800" height="600" />
+<img id="myDIV" src="images/Interop.png" style="float:right; display:none" width="575" height="550" />
+<img id="myDIV1" src="images/DCIDemo.png" style="float:right; display:none;" width="575" height="350" />
 <img id="myDIV2" src="images/SR_Anycast.png" style="float:right; display:none;" width="800" height="600" />
 <img id="myDIV3" src="images/LDP_interop.png" style="float:right; display:none;" width="800" height="600" />
 <img id="myDIV4" src="images/SR_CBF.png" style="float:right; display:none;" width="800" height="600" />
 <img id="myDIV5" src="images/SR_MacroTE.png" style="float:right; display:none;" width="800" height="600" />
 <img id="myDIV6" src="images/SR_MicroTE.png" style="float:right; display:none;" width="800" height="600" />
 </div>
-<div>
 
-
-<button onclick="myFunction6()" aria-pressed="false" style="float:right;">SR Micro TE</button>
-<button onclick="myFunction5()" aria-pressed="false" style="float:right;">SR Macro TE</button>
-<button onclick="myFunction4()" aria-pressed="false" style="float:right;">SR CBF</button>
-<button onclick="myFunction3()" aria-pressed="false" style="float:right;">LDP Inter-Op</button>
-<button onclick="myFunction2()" aria-pressed="false" style="float:right;">SR Anycast</button>
-<button onclick="myFunction1()" aria-pressed="false" style="float:right;">SR ECMP</button>
-<button onclick="myFunction()" aria-pressed="true" style="float:right;">Base Demo</button>
-
-
-</div>
 
 <style>
 
@@ -432,6 +480,7 @@ function myFunction() {
         x.style.display = 'block';
     }
 }
+
 function myFunction1() {
     toggleButton(event.target);
     var x = document.getElementById('myDIV1');
@@ -486,9 +535,43 @@ function myFunction6() {
         x.style.display = 'block';
     }
 }
+
 </script>
 
+
+  
+
+
+
 <div id="pathList">
+
+</div>
+
+
+
+<div style="padding: 5px 5px 5px 5px; height: 870px; width: 310px;position:fixed;right:0;bottom:0">
+      <h4 align="center">Diagrams   (click to enlarge)</h4>
+  </SCRIPT>
+    <SCRIPT TYPE="text/javascript">
+      function popup(mylink, windowname) { 
+        if (! window.focus)return true;
+        var href;
+        if (typeof(mylink) == 'string') href=mylink;
+        else href=mylink.href; 
+        window.open(href, windowname, 'width=900,height=800,scrollbars=yes'); 
+        return false; 
+      }
+</SCRIPT>
+
+
+<MAP NAME="popupImgMap"> <AREA SHAPE=RECT HREF="images/Interop.png" ALT="My Popup" COORDS="10,10,300,200" onClick="return popup(this, 'gloss')">
+<MAP NAME="popupImgMap1"> <AREA SHAPE=RECT HREF="images/DCIDemoTenantA.png" ALT="Your Popup" COORDS="10,10,300,200"  onClick="return popup(this, 'gloss1')">
+<MAP NAME="popupImgMap2"> <AREA SHAPE=RECT HREF="images/DCIDemoTenantB.png" ALT="Your Popup1" COORDS="10,10,300,200"  onClick="return popup(this, 'gloss2')">
+<MAP NAME="popupImgMap3"> <AREA SHAPE=RECT HREF="images/Inter-AS.png" ALT="Your Popup1" COORDS="10,10,300,200"  onClick="return popup(this, 'gloss3')"> 
+</MAP> <IMG SRC="images/LabOverview.gif" HEIGHT=200 WIDTH=300 ALT="Interop" BORDER="0" USEMAP="#popupImgMap">
+</MAP> <IMG SRC="images/DCITenantA.gif" HEIGHT=200 WIDTH=300 ALT="Image Map Example" BORDER="0" USEMAP="#popupImgMap1">
+</MAP> <IMG SRC="images/DCITenantB.gif" HEIGHT=200 WIDTH=300 ALT="Image Map Example" BORDER="0" USEMAP="#popupImgMap2">
+</MAP> <IMG SRC="images/Inter-AS.gif" HEIGHT=200 WIDTH=300 ALT="Image Map Example" BORDER="0" USEMAP="#popupImgMap3">
 
 </div>
 

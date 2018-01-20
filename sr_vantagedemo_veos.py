@@ -30,22 +30,37 @@ from  __builtin__ import any as b_any
 import requests
 from flask import Flask, render_template, request
 
-##  Can add as many commands as you want here.
+##  Commands run in the polling of the ISIS router.
 
 C = "show isis database detail"
+C1 = "show isis segment-routing prefix-segments"
 
 ### Program Variables.  #############################################
 
-###  System has a 1 second wait at end - so switch doesn't blow.
+####  Don't need to change this is if running in a Docker container.  This is athe ExaBGP IP.
 
-COMMANDS = [C]
-CONTROLLER_IP = '192.168.1.2'
+CONTROLLER_IP = '10.92.61.187'
+
+##### Configure this ISIS poll timer so the switch Capi doesn't blow out.  5 sec is solid.  Min 2 sec
+
+POLLTIMER = 5
+
+###  System has a 1 second wait time as well (not really needed)
+
+###This DEADTIMECOUNTER and DEADTIMETIMER - ensures we remove the route after a delay (default .5 sec)
+
 DEADTIMECOUNTER = 1
 DEADTIMETIMER = 0.5
-BGP_LU_Peer = 'xxx.xxx.xxx.xxx'
+
+
+BGP_LU_Peer = []
+BGP_LU_Peer1 = '1.1.1.1'
+BGP_LU_Peer2 = '6.6.6.6'
 
 #####################################################################
 
+
+		
 def parse_args(argv):
     nodes = []
     hostname_list = []
@@ -111,20 +126,82 @@ def connect(user, password, address):
         return switch
 
 
+
+class PopulateFiles(Process):
+	global POLLTIMER
+	def __init__(self):
+		super(PopulateFiles, self).__init__()
+		self.refresh_rate,self.switches, self.hostname_list  = parse_args(sys.argv[1:])
+		
+		# Create the files we need on initiation.
+		
+		script_dir = os.path.dirname(__file__)
+		rel_path = "ISIS_DataBase"
+		abs_file_path = os.path.join(script_dir, rel_path)
+		f = open(abs_file_path,'w') #Clear the file or Create the file if it doesn't exist
+		f.close()
+		rel_path = "Active_SIDs"
+		abs_file_path = os.path.join(script_dir, rel_path)
+		f = open(abs_file_path,'w') #Clear the file or Create the file if it doesn't exist
+		f.close()
+		
+		###########################################
+		
+	def run(self):
+		while True:
+			self.Get_Active_Node_SIDs(self.refresh_rate,self.switches, self.hostname_list)
+			
+	
+			
+	def Get_Active_Node_SIDs(self, refresh_rate, switches, hostname_list):
+		while True:
+			try:
+				self.oldstdout = sys.stdout
+				self.script_dir = os.path.dirname(__file__)
+				self.rel_path = "ISIS_DataBase"
+				self.abs_file_path = os.path.join(self.script_dir, self.rel_path)
+				self.f = open(self.abs_file_path,'r+')
+				sys.stdout = self.f
+				self.switch = switches.values()[0]
+				output = self.switch.runCmds ( 1, [ C ], "text" )
+				f = output[0]['output']
+				print f
+				sys.stdout.close()
+				sys.stdout = self.oldstdout
+				ActiveNodeSIDs = []
+				ActivePrefixes = []
+				output = self.switch.runCmds ( 1, [ C1 ], "json" )
+				prefix_segment_details = output[0]['vrfs']['default']['isisInstances']['sr_instance']['prefixSegments']
+				sleep(0.1)
+				output1 = self.switch.runCmds ( 1, [ 'show ip route '  ], "json" )
+				sleep(0.1)
+				prefixes = output1[0]['vrfs']['default']['routes']
+				for prefix in prefixes:
+					ActivePrefixes.append(str(prefix))
+				#pp(ActivePrefixes)
+				for entry in prefix_segment_details:
+					line = str(entry['prefix'])
+					#print line
+					if line in ActivePrefixes:
+						ActiveNodeSIDs.append(str(entry['systemId']))
+				#pp(ActiveNodeSIDs)
+				self.script_dir = os.path.dirname(__file__)
+				self.rel_path = "Active_SIDs"
+				self.abs_file_path = os.path.join(self.script_dir, self.rel_path)
+				self.file = open(self.abs_file_path,'w')
+				for item in ActiveNodeSIDs:
+					self.file.write("%s\n" % item)
+				sleep(POLLTIMER)
+			except KeyboardInterrupt:
+				sys.exit(0)
+
+
+
+
 class Get_ISIS_SIDS(object):
 
-	def parse_isis_adj(self, switch):
-		self.oldstdout = sys.stdout
-		self.script_dir = os.path.dirname(__file__)
-		self.rel_path = "ISIS_DataBase"
-		self.abs_file_path = os.path.join(self.script_dir, self.rel_path)
-		self.f = open(self.abs_file_path,'w')
-		sys.stdout = self.f
-		output = switch.runCmds ( 1, [ C ], "text" )
-		f = output[0]['output']
-		print f
-		sys.stdout.close()
-		sys.stdout = self.oldstdout
+	
+	def parse_isis_adj(self):
 		self.script_dir = os.path.dirname(__file__)
 		self.rel_path = "ISIS_DataBase"
 		self.abs_file_path = os.path.join(self.script_dir, self.rel_path)
@@ -151,7 +228,7 @@ class Get_ISIS_SIDS(object):
 				n = n.split(' ')[0]
 				n = n.split('.')[0]
 				#print n,
-				code = '%s-%s' % ( hostname, n)
+				code = '%s&*&%s' % ( hostname, n)
 			if l.startswith('Adj-sid'):
 				l = l.strip()
 				l = l.rstrip()
@@ -162,7 +239,7 @@ class Get_ISIS_SIDS(object):
 				o = o.split('.')[0]
 				#print o,
 				code = '{'+str(code) +':%s}' % (o)
-				Temp_Adj_SIDs.append(code)	
+				Temp_Adj_SIDs.append(code)
 		for node in Temp_Adj_SIDs:
 			#d = dict(e.split(":") for e in node.translate(None,"{}").split(","))
 			node = node.strip()
@@ -177,8 +254,11 @@ class Get_ISIS_SIDS(object):
 				print('Ignoring: malformed line: "{}"'.format(u))
 		#pp(Adj_SIDs)	
 		return Adj_SIDs
+	
+
 		
-	def parse_isis_node(self, switch):
+	def parse_isis_node(self):
+
 		self.script_dir = os.path.dirname(__file__)
 		self.rel_path = "ISIS_DataBase"
 		self.abs_file_path = os.path.join(self.script_dir, self.rel_path)
@@ -203,7 +283,6 @@ class Get_ISIS_SIDS(object):
 		Node_SIDs = []
 		Temp_Node_SIDs = []
 		d2 = {}
-		Node_SIDs = []
 		for l in self.fin.readlines():
 			l = l.lstrip()
 			l = l.rstrip()
@@ -212,7 +291,7 @@ class Get_ISIS_SIDS(object):
 					hostname = hostname.split(".")[0]
 					#print hostname
 					continue
-			if l.startswith('SR Prefix-SID'):
+			if l.startswith('SR Prefix-SID') and 'N' in l:
 					l = l.strip()
 					l = l.rstrip()
 					tmp = l.split( ':' )
@@ -224,18 +303,30 @@ class Get_ISIS_SIDS(object):
 					code = '{%s:%s}' % (hostname ,r)
 					Temp_Node_SIDs.append(code)
 		#pp(Temp_Node_SIDs)
+		ActiveNodeSIDs = []
+		self.script_dir = os.path.dirname(__file__)
+		self.rel_path = "Active_SIDs"
+		self.abs_file_path = os.path.join(self.script_dir, self.rel_path)
+		with open(self.abs_file_path,'r') as self.f:
+			ActiveNodeSIDs = [word.strip() for word in self.f]
+		#print "\n\nactive SIDs from parse Node SIDs"
+		#pp(ActiveNodeSIDs)	
 		for node in Temp_Node_SIDs:
 			node = node.strip()
 			t = node.lstrip('{')
 			u = t.rstrip('}')
 			try:
 				k,v = u.split(':')
-				d2[str(k)] = str(v)
-				Node_SIDs.append(d2.copy())
-				del d2[k]
+				#print "follows the value k"
+				#print k
+				if k in ActiveNodeSIDs:
+					d2[str(k)] = str(v)
+					Node_SIDs.append(d2.copy())
+					del d2[k]
 			except ValueError:
 				print('Ignoring: malformed line: "{}"'.format(u))
 			#pp(d2)
+		#print "\n\nNode SIDs returned from parse Node SIDs"
 		#pp(Node_SIDs)
 		return Node_SIDs
 
@@ -253,15 +344,14 @@ class Get_ISIS_SIDS(object):
 class Get_SIDs_DICTS(Process):
 	def __init__(self):
 		super(Get_SIDs_DICTS, self).__init__()
+		self.refresh_rate,self.switches, self.hostname_list  = parse_args(sys.argv[1:])
 	def run(self):
 		while True:
-			self.refresh_rate,self.switches, self.hostname_list  = parse_args(sys.argv[1:])
 			self.build_graph_dicts(self.refresh_rate,self.switches, self.hostname_list)
 
 	def build_graph_dicts(self, refresh_rate, switches, hostname_list):
 		while True:
 			try:
-				sleep(1)
 				node_names = []
 				links_list_temp = []
 				links_list_for_force_graph = []
@@ -275,13 +365,14 @@ class Get_SIDs_DICTS(Process):
 		### Actually we call class get_isis and use parse_isis_adj and parse_isis_node
 		### To connect to the single "exporter" and it parses the returned output
 		
-				isis_switch = switches.values()[0]
+				#isis_switch = switches.values()[0]
 				get_isis = Get_ISIS_SIDS()
-				Adj_SIDs = get_isis.parse_isis_adj(isis_switch)
-				Node_SIDs = get_isis.parse_isis_node(isis_switch)
+				Adj_SIDs = get_isis.parse_isis_adj()
+				Node_SIDs = get_isis.parse_isis_node()
 				
 		### Build the mapping file for D3 in the fomat it likes.  Using the ADJ and Node SID's
 		
+				#pp(Adj_SIDs)
 				for node in Node_SIDs:
 					node_names.append(node.keys()[0])
 				node_names_final = self.uniq(node_names)
@@ -290,7 +381,7 @@ class Get_SIDs_DICTS(Process):
 				new_links_list_temp = []
 				for entry in Adj_SIDs:
 					for key in entry:
-						splitkey = key.split("-")
+						splitkey = key.split("&*&")
 						new_links_list_temp.append({"id": str(entry.get(key)), "source": str(splitkey[0]), "target": str(splitkey[1]),  "value":1})
 				for link in new_links_list_temp:
 					for node in node_names_final_list:
@@ -303,8 +394,10 @@ class Get_SIDs_DICTS(Process):
 									if record not in links_list:
 										links_list.append(record)
 	
-				# pp(new_links_list_temp)
-				# pp(node_names_final_list)
+				#pp(links_list)
+				#pp(new_links_list_temp)
+				#print "\n\nNode name final list as determined in Get_SIDs_DICTS.build_graph_dicts"
+				#pp(node_names_final_list)
 		
 		####  Now increment duplicates' value so it graphs nice and pretty.
 				
@@ -327,11 +420,13 @@ class Get_SIDs_DICTS(Process):
 		### Write to topology file for the D3 graph (thats the ONLY thing that uses it.)
 
 				json_prep = {"links":links_list, "nodes":node_names_final_list}
+				#print json_prep
 				filename_out = 'sr_topology.json'
+				open(filename_out, 'w').close()
 				with open(filename_out,'w') as json_out:
 					json.dump(json_prep, json_out, indent = 2)
 					json_out.close()
-	
+				sleep(1)
 			except KeyboardInterrupt:
 				sys.exit(0)
 
@@ -432,8 +527,8 @@ class AddRemoveRoutes(Process):
 				print "Running Main Routine.... All engines are go........"	
 				self.isis_switch = self.switches.values()[0]
 				self.get_isis = Get_ISIS_SIDS()
-				self.Adj_SIDs = self.get_isis.parse_isis_adj(self.isis_switch)
-				self.Node_SIDs = self.get_isis.parse_isis_node(self.isis_switch)
+				self.Adj_SIDs = self.get_isis.parse_isis_adj()
+				self.Node_SIDs = self.get_isis.parse_isis_node()
 				self.data = []
 				TopoChangeAddPathList = []
 				TopoChangeRemovePathList = []
@@ -449,7 +544,7 @@ class AddRemoveRoutes(Process):
 						f.close()
 					except ValueError:
 						#print "Path File Is Empty"
-						self.data = {u'fec': u'', u'dstPrefix': u'', u'Primary': False, u'dstNH': u'', u'dstFecNH': u'', u'RemoveFEC': u'', u'path': [], u'ManualFECPath':[], u'RemoveRoute': u'', u'Secondary': False}
+						self.data = {u'fec': u'', u'dstPrefix': u'', u'Primary': False, u'dstNH': u'', u'dstFecNH': u'', u'RemoveFEC': u'', u'path': [], u'ManualFECPath':[], u'ManualFECPathID': u'', u'FECPathID': u'', u'RemoveRoute': u'', u'Secondary': False}
 						pass
 			
 		### Here if there is a manual path entered and it comes over the JSON POST take it (a string)
@@ -470,6 +565,7 @@ class AddRemoveRoutes(Process):
 						return
 					
 		### Right - now kick off the parsing and storing of said POST variables.
+		
 				try:
 					if str(self.data['dstPrefix']):
 						currentpath = str(self.data['dstPrefix'])+' next-hop ' +str(self.data['dstNH'])
@@ -814,20 +910,24 @@ if __name__ == "__main__":
 	refresh_rate, switches, hostname_list  = parse_args(sys.argv[1:])
 	print "\n\nStarting....Label Gathering and Webserver.....\n\n"
 	#start the controller as a separate proceses
+	BGP_LU_Peer = [BGP_LU_Peer2,BGP_LU_Peer1]
 	backend_flask_instance = None
 	flask_backend_process = multiprocessing.Process(None, _worker,"async web interface listener")
 	flask_backend_process.start()
-	p1 = Get_SIDs_DICTS()
-	p2 = AddRemoveRoutes()
+	p2 = Get_SIDs_DICTS()
+	p3 = AddRemoveRoutes()
+	p1 = PopulateFiles()
 	p1.start()
 	p2.start()
+	p3.start()
 	try:
 		while True:
 		   pass
 	except KeyboardInterrupt:
 		controller_ip = CONTROLLER_IP
-		r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'neighbor '+str(BGP_LU_Peer)+  ' teardown 2')})
-		sleep(.5)
+		for Peer in BGP_LU_Peer:
+			r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'neighbor '+str(Peer)+  ' teardown 2')})
+			sleep(.5)
 		print " \n\n Hard Clearing the Controller BGP peering Session"
 		p1.terminate()
 		p2.terminate()
