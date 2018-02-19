@@ -5,6 +5,10 @@
 # and the local AS
 ###############################################################################
 
+Container:
+  ip_address: 192.168.1.2
+  user: demo
+  password: demo
 
 LERs:
   ip_address:

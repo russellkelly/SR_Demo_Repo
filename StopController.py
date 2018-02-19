@@ -42,13 +42,11 @@ def main():
 	data = {"user": user,
 		"host": host,
 		"password": password,
-		"commands": "sudo pkill -9 exabgp ; sudo pkill -9 screen ; screen -wipe ; screen -dm exabgp srdemo.conf --debug; screen -dm python sr_demo.py -u "+str(poll_router_user)+" -p "+str(poll_router_pw)+" -a " + str(poll_router)}
+		"commands": "sudo pkill -9 exabgp ; sudo pkill -9 screen ; screen -wipe"}
 	command = "sshpass -p {password} ssh -o StrictHostKeyChecking=no {user}@{host} {commands}"
 	os.system(command.format(**data))
 	print ("\n\nKilling Controller........\n\n\n")
-	print ("\n\nStarting ExaBGP ........\n\n\n")
 	sleep(0.5)
-	print ("\n\nStarting Controller ........\n\n\n")
 	print ("\n\nDone! ........\n\n\n")
 	exit(0)
 

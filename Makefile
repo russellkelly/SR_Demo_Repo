@@ -5,15 +5,6 @@ build :
 	docker build -t sr-demo .
 
 
-base-container:
-	docker network create --driver=bridge --subnet=192.168.1.0/24 sr-net
-	docker run -d -it --network=sr-net --ip=192.168.1.2 --dns=8.8.8.8 \
-	--volume `pwd`:/home/demos/sr-demo \
-	-p 179:179 \
-	-p 5002:5000 \
-	--name srbase sr-demo
-	docker exec -d srbase exabgp srdemo.conf
-
 demo-container:
 	docker network create --driver=bridge --subnet=192.168.1.0/24 sr-net
 	docker run --name srdemo --rm -t --network=sr-net --ip=192.168.1.2 --dns=8.8.8.8 \
@@ -30,6 +21,4 @@ term:
         -i sr-demo bash
 
 clean:
-	docker stop srbase
-	docker rm srbase
 	docker network rm sr-net

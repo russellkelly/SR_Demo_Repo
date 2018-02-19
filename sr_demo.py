@@ -21,6 +21,7 @@ import argparse
 import pyeapi
 import getopt
 import copy
+import yaml
 import optparse
 import errno
 import collections
@@ -905,7 +906,6 @@ if __name__ == "__main__":
 		TopoVar = yaml.load(f)
 	f.close()
 	CONTROLLER_IP = str(TopoVar['exabgp']['ip_address'])
-	password = str(TopoVar['password'])
 	BGP_LU_Peer = TopoVar['LERs']['ip_address']
 	backend_flask_instance = None
 	flask_backend_process = multiprocessing.Process(None, _worker,"async web interface listener")
