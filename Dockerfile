@@ -18,6 +18,7 @@ RUN apt-get install -qy vim
 RUN apt-get install -qy telnet
 RUN apt-get install -qy curl
 RUN apt-get install -qy shellinabox
+RUN apt-get install -qy screen
 RUN apt-get clean
 RUN pip install flask
 RUN pip install pyeapi

@@ -1,0 +1,23 @@
+###############################################################################
+# This file defines all the customizable topology details for the SR Demo
+# Mainly, the controller IP (used in the .py files to send HTTP API),
+# the LERs, (those the controller sends the labeled routes to),
+# and the local AS
+###############################################################################
+
+
+LERs:
+  ip_address:
+      - 10.92.61.161
+      - 10.92.61.166
+
+ISIS-DB-Poll:
+  ip_address: 10.92.61.179
+  user: admin
+  password: admin
+
+exabgp:
+  ip_address: 192.168.1.2
+
+local_as:
+  as: 64512

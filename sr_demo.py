@@ -37,9 +37,6 @@ C1 = "show isis segment-routing prefix-segments"
 
 ### Program Variables.  #############################################
 
-####  Don't need to change this is if running in a Docker container.  This is athe ExaBGP IP.
-
-CONTROLLER_IP = '10.92.61.187'
 
 ##### Configure this ISIS poll timer so the switch Capi doesn't blow out.  5 sec is solid.  Min 2 sec
 
@@ -52,15 +49,9 @@ POLLTIMER = 5
 DEADTIMECOUNTER = 1
 DEADTIMETIMER = 0.5
 
-
-BGP_LU_Peer = []
-BGP_LU_Peer1 = '1.1.1.1'
-BGP_LU_Peer2 = '6.6.6.6'
-
 #####################################################################
 
 
-		
 def parse_args(argv):
     nodes = []
     hostname_list = []
@@ -910,7 +901,12 @@ if __name__ == "__main__":
 	refresh_rate, switches, hostname_list  = parse_args(sys.argv[1:])
 	print "\n\nStarting....Label Gathering and Webserver.....\n\n"
 	#start the controller as a separate proceses
-	BGP_LU_Peer = [BGP_LU_Peer2,BGP_LU_Peer1]
+	with open('TopologyVariables.yaml', 'r') as f:
+		TopoVar = yaml.load(f)
+	f.close()
+	CONTROLLER_IP = str(TopoVar['exabgp']['ip_address'])
+	password = str(TopoVar['password'])
+	BGP_LU_Peer = TopoVar['LERs']['ip_address']
 	backend_flask_instance = None
 	flask_backend_process = multiprocessing.Process(None, _worker,"async web interface listener")
 	flask_backend_process.start()

@@ -1,4 +1,4 @@
-demo:	build base-container demo-container
+demo:	build demo-container
 
 
 build :
@@ -15,9 +15,12 @@ base-container:
 	docker exec -d srbase exabgp srdemo.conf
 
 demo-container:
-	docker run --name srdemo --rm -t --network=sr-net --ip=192.168.1.3 --dns=8.8.8.8 \
-	-p 5003:5001 \
-	-p 4201:4200 \
+	docker network create --driver=bridge --subnet=192.168.1.0/24 sr-net
+	docker run --name srdemo --rm -t --network=sr-net --ip=192.168.1.2 --dns=8.8.8.8 \
+	-p 5001:5001 \
+	-p 4200:4200 \
+	-p 179:179 \
+	-p 5000:5000 \
 	--volume `pwd`:/home/demos/sr-demo \
         -i sr-demo bash
 

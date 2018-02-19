@@ -1,0 +1,26 @@
+
+process http-api {
+      run /usr/bin/python {{home_directory}}/app.py;
+      encoder json;
+}
+
+{%- for ip_address in LERs.ip_address %}
+neighbor {{ ip_address }} {
+      local-address {{ exabgp.ip_address }};
+      router-id {{ exabgp.ip_address }};
+      local-as {{local_as.as}};
+      peer-as {{local_as.as}};
+      adj-rib-out false;
+      group-updates;
+      family {
+        ipv4 unicast;
+        ipv4 nlri-mpls;
+      }
+      api {
+        processes [ http-api ];
+      }
+      capability {
+        add-path send;
+      }
+}
+{%- endfor %}
