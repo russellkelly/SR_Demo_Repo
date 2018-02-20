@@ -39,10 +39,6 @@ This command runs build: (Builds the image sr-demo) and spawns container srdemo.
 It will enter you in to the bash shell of the container.
 
 
-NOTE: All links in the ISIS configuration need to be configured as p2p
-
-- isis network point-to-point
-
 
 
 
@@ -84,8 +80,21 @@ Amend the local and remote AS in this file to match your Topology
 (NOTE:  The rest of the sections should not need to be changed)
 
 
-Step 2: Render the LER configlets for the Arista LERs
-------------------------------------------------------
+Step 2a Configuration Notes for the ISIS-SR topology
+----------------------------------------------------
+
+All links in the ISIS configuration on the routers need to be configured
+as p2p links.  In EOS it is configured as
+
+        isis network point-to-point
+
+The ISIS configuration should be as a level-2.  In EOS this is configured as:
+
+        is-type level-2
+        
+
+Step 2b: Render the LER BGP configlets for the Arista LERs
+-----------------------------------------------------------
 
 This is an additional (optional) step.  If you want the configurations for the
 Arista EOS LERs to be rendered you can run the following command from within the
