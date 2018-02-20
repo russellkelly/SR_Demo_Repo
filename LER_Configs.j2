@@ -1,0 +1,16 @@
+{%- for ip_address in LERs.ip_address %}
+
+===========================================================
+Ingress Router {{ip_address}}
+===========================================================
+
+neighbor {{controller_ip}} remote_as {{local_as.as}}
+neighbor {{controller_ip}} link-bandwidth
+neighbor {{controller_ip}} local-as {{remote_as.as}} no-prepend replace-as
+address-family ipv4 labeled-unicast
+   neighbor {{controller_ip}} activate
+!
+address-family ipv4
+   bgp additional-paths receive
+
+{%- endfor %}

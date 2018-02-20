@@ -5,23 +5,61 @@
 # and the local AS
 ###############################################################################
 
+###############################################################################
+# This container Section should not need to be changed.  The ip address of the
+# container is set in the Makefile (sr_net), so only if you change the Makefile
+# will you need to change this section
+###############################################################################
+
 Container:
   ip_address: 192.168.1.2
   user: demo
   password: demo
+
+###############################################################################
+# This Section will need to be modified to match your SR Edge routers.  These
+# are the routers you will be pushing routes to.  Example IPs below.  Any new
+# LER needs to be added on a new line preceded by a "-"
+###############################################################################
 
 LERs:
   ip_address:
       - 10.92.61.161
       - 10.92.61.166
 
+###############################################################################
+# This Section will need to be modified to match the router you are polling
+# to extract the ISIS topology.  This may, or may not be one of the LER routers
+# above.  In the example below it is anothr router seperate to the LERs
+###############################################################################
+
 ISIS-DB-Poll:
   ip_address: 10.92.61.179
   user: admin
   password: admin
 
+###############################################################################
+# This exabgp section should not need to be changed.  The ip address of the
+# exabgp instance is set in the Makefile (sr_net), so only if you change the
+# Makefile will you need to change this section
+###############################################################################
+
 exabgp:
   ip_address: 192.168.1.2
 
+###############################################################################
+# This local_as section will need to be changed to match the AS used for
+# peering between the Exabgp instance and your routers. This is the Exabgp AS
+###############################################################################
+
 local_as:
+  as: 64512
+
+###############################################################################
+# This remote_as section will need to be modified to match the AS used for
+# peering between the Exabgp instance and your routers.  This is the LER AS
+#In this case it is Configure to be an iBGP session
+###############################################################################
+
+remote_as:
   as: 64512

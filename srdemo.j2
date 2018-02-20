@@ -9,7 +9,7 @@ neighbor {{ ip_address }} {
       local-address {{ exabgp.ip_address }};
       router-id {{ exabgp.ip_address }};
       local-as {{local_as.as}};
-      peer-as {{local_as.as}};
+      peer-as {{remote_as.as}};
       adj-rib-out false;
       group-updates;
       family {

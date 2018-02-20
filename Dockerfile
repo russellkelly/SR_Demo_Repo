@@ -59,5 +59,3 @@ COPY exabgp.env /usr/local/etc/exabgp/exabgp.env
 
 
 ENTRYPOINT sudo service ssh restart && bash
-
-USER demo
