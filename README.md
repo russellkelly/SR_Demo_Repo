@@ -39,16 +39,11 @@ This command runs build: (Builds the image sr-demo) and spawns container srdemo.
 It will enter you in to the bash shell of the container.
 
 
-The srdemo will delete upon exit. To stop and remove the sr-net run:
-
-        make clean
-
-
-All links in the ISIS configuration need to be configured as p2p
+NOTE: All links in the ISIS configuration need to be configured as p2p
 
 - isis network point-to-point
 
-Below is some details on what each file does:
+
 
 
 CONFIGURING AND RUNNING THE SR CONTROLLER
@@ -63,7 +58,7 @@ Step 1: Customize the TopologyVariables.yaml File.
 
 Amend the variables in the file below to match your topology :
 
-TopologyVariables.yaml file.  (THIS IS THE ONLY FILE THAT NEEDS TO BE AMENDER)
+TopologyVariables.yaml file.  (THIS IS THE ONLY FILE THAT NEEDS TO BE AMENDED)
 
 Change the following in TopologyVariables.yaml:
 
@@ -89,18 +84,91 @@ Amend the local and remote AS in this file to match your Topology
 (NOTE:  The rest of the sections should not need to be changed)
 
 
-Step 2:
-=================================
+Step 2: Render the LER configlets for the Arista LERs
+------------------------------------------------------
+
+This is an additional (optional) step.  If you want the configurations for the
+Arista EOS LERs to be rendered you can run the following command from within the
+container bash shell.
+
+        root@df20977bb044:~# python RenderAristaLERsConfiguration.py
+
+This will create a file LERs.conf with the BGP configlet for every LER in the
+TopologyVariables.yaml file.
+
+
+Step 3: Starting, stopping and Restarting the controller
+---------------------------------------------------------
 
 Now one can run controller:
 
-        make demo
-        python sr_demo.py -u <eAPI username> -p <eAPI password> -a <ISIS DB Topology Export Router IP>
+        root@df20977bb044:~# ./StartController.sh
 
 
-Now browse to the IP address of the VM or local machine where docker is installed, on port 5003
+Now browse to the IP address of the VM or local machine
+where docker is installed, on port 5001
 
-http://"localhost" or "VM IP":5001
+http://localhost:5001
+
+To stop the controller simply run
+
+        root@df20977bb044:~# ./StopController.sh
+
+Or restart the Controller with the script.
+
+        root@df20977bb044:~# ./RestartController.sh
+
+
+Step 4: Exiting the Container and cleaning up sr-net
+---------------------------------------------------------
+
+When you type "exit" in the the container bash shell the container will exit.  
+
+To start the controller again you need to "clean" the sr-net by running the
+command
+
+        make clean
+
+To detach the tty without exiting the shell,use the escape sequence:
+
+        Ctrl-p + Ctrl-q
+
+This will leave the container running and you will be able to re-attach by
+simply running:
+
+        docker attach srdemo
+
+
+
+
+TROUBLESHOOTING THE SR CONTROLLER
+=================================
+
+The container actually runs exabgp and the controller script in separate screen
+sessions.  You can see these screen sessions by running the command below.
+
+        root@f56a7d56c078:~# screen -ls
+        There are screens on:
+        	66..f56a7d56c078	(02/20/18 01:41:59)	(Detached)
+        	69..f56a7d56c078	(02/20/18 01:41:59)	(Detached)
+        2 Sockets in /var/run/screen/S-root.
+
+To attach to a screen session again simply run:
+
+        root@f56a7d56c078:~# screen -r <screen id>
+
+As an example from above:
+
+        root@f56a7d56c078:~# screen -r 66..f56a7d56c078
+
+Once you attach to a screen session you will see the debug output from either:
+
+- The exabgp screen session.  This can be used to see the request API pushes
+from Exa and the BGP peering status
+- The sr_demo.py script console.
+
+
+
 
 
 SYSTEM RUNTIME FILES
