@@ -1,8 +1,9 @@
 # SR Demo & Controller
 
-An SR Controller BGP-LU with Segment Routing Labels
+A Python Based SR and BGP-LU Route Controller for Traffic Engineering.
 
-A Python Based SR and BGP Route Controller for Traffic Engineering.
+An SR Controller that pushes BGP-LU routes for traffic engineering in an MPLS
+ISIS-SR Domain
 
 To run the demo install EXABGP (version 4.0.0) along with Python 2.7.
 
@@ -20,12 +21,6 @@ To build your own version of the controller all you need to do is install Docker
 clone the git repository:
 
         git clone git@github.com:russellkelly/SR_Demo_Repo.git
-
-IMPORTANT: ! Change the srdemo.conf file to match ingress (ingress LER) router's
-peering IP address.  Note:  The exabgp address, if runnning in a docker
-container) will not need to be changed as the docker container runs in private
-sr-net subnet and the controller (and hence the exabgp process) is given
-address 192.168.1.2.
 
 Switch to the clone directory SR_Demo_Repo
 
