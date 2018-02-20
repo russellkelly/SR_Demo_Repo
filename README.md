@@ -91,7 +91,7 @@ as p2p links.  In EOS it is configured as
 The ISIS configuration should be as a level-2.  In EOS this is configured as:
 
         is-type level-2
-        
+
 
 Step 2b: Render the LER BGP configlets for the Arista LERs
 -----------------------------------------------------------
@@ -176,7 +176,9 @@ Once you attach to a screen session you will see the debug output from either:
 from Exa and the BGP peering status
 - The sr_demo.py script console.
 
+To detach from the screen, but leaving it running, run the following:
 
+        Ctrl-a + Ctrl-d
 
 
 
