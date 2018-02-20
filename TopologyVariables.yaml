@@ -17,6 +17,15 @@ Container:
   password: demo
 
 ###############################################################################
+# This exabgp section should not need to be changed.  The ip address of the
+# exabgp instance is set in the Makefile (sr_net), so only if you change the
+# Makefile will you need to change this section
+###############################################################################
+
+exabgp:
+  ip_address: 192.168.1.2
+
+###############################################################################
 # This Section will need to be modified to match your SR Edge routers.  These
 # are the routers you will be pushing routes to.  Example IPs below.  Any new
 # LER needs to be added on a new line preceded by a "-"
@@ -37,15 +46,6 @@ ISIS-DB-Poll:
   ip_address: 10.92.61.179
   user: admin
   password: admin
-
-###############################################################################
-# This exabgp section should not need to be changed.  The ip address of the
-# exabgp instance is set in the Makefile (sr_net), so only if you change the
-# Makefile will you need to change this section
-###############################################################################
-
-exabgp:
-  ip_address: 192.168.1.2
 
 ###############################################################################
 # This local_as section will need to be changed to match the AS used for

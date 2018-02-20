@@ -6,41 +6,101 @@ A Python Based SR and BGP Route Controller for Traffic Engineering.
 
 To run the demo install EXABGP (version 4.0.0) along with Python 2.7.
 
-This controller can be run on a VM or a BMS, but in addition is all dockerized and can be run in a container (instructions below)
+This controller can be run on a VM or a BMS, but in addition is all dockerized
+and can be run in a container (instructions below)
 
 For details on  EXABGP refer to this link:
 
 https://github.com/Exa-Networks/exabgp
 
 INSTALLATION:
+=============
 
-To build your own version of the controller all you need to do is install Docker clone the git repository:
+To build your own version of the controller all you need to do is install Docker
+clone the git repository:
 
         git clone git@github.com:russellkelly/SR_Demo_Repo.git
 
-IMPORTANT: ! Change the srdemo.conf file to match ingress (ingress LER) router's peering IP address.  Note:  The exabgp address, if runnning in a docker container) will not need to be changed as the docker container runs in private sr-net subnet and the controller (and hence the exabgp process) is given address 192.168.1.2.
+IMPORTANT: ! Change the srdemo.conf file to match ingress (ingress LER) router's
+peering IP address.  Note:  The exabgp address, if runnning in a docker
+container) will not need to be changed as the docker container runs in private
+sr-net subnet and the controller (and hence the exabgp process) is given
+address 192.168.1.2.
+
+Switch to the clone directory SR_Demo_Repo
+
+        cd SR_Demo_Repo
 
 Then in the cloned (SR_Demo_Repo) directory run:
 
-        make demo # This runs build: (Builds the image sr-demo) and spawns containers srbase & srdemo
+        make demo
 
-The srbase container is one that exabgp runs in, and peers with ingress LER.  One can connect to the container if required by running:
-
-        docker attach <container-id>|<container name>
-        
-        to stop/start exabgp in this conatiner run: exabgp srdemo.conf  (stop exabgp with CTRL+C)
-
-The srdemo container starts as another container in sr-net to run the demo from.
+This command runs build: (Builds the image sr-demo) and spawns container srdemo.
+It will enter you in to the bash shell of the container.
 
 
-The srdemo will delete upon exit.  The srbase container will not.  To stop and remove run:
+The srdemo will delete upon exit. To stop and remove the sr-net run:
 
         make clean
 
 
-All links in the ISIS configuration need to be configured as p2p - isis network point-to-point
+All links in the ISIS configuration need to be configured as p2p
+
+- isis network point-to-point
 
 Below is some details on what each file does:
+
+
+CONFIGURING AND RUNNING THE SR CONTROLLER
+==========================================
+
+Once the git repository has been cloned locally and the images and containers
+installed as above and you are in the srdemo bash shell proceed with the
+following steps:
+
+Step 1: Customize the TopologyVariables.yaml File.
+==================================================
+
+Amend the variables in the file below to match your topology :
+
+TopologyVariables.yaml file.  (THIS IS THE ONLY FILE THAT NEEDS TO BE AMENDER)
+
+Change the following in TopologyVariables.yaml:
+
+The LERs to match your topology
+
+        LERs:
+          ip_address:
+              - xxx.xxx.xxx.xxx
+              - xxx.xxx.xxx.xxx
+
+
+The ISIS-DB export router. This is in your domain will need to have
+eAPI enabled (see documentation).  This router will be used for topology
+(ISIS DB) export.
+
+        ISIS-DB-Poll:
+          ip_address: xxx.xxx.xxx.xxx
+          user: <string>
+          password: <string>
+
+Amend the local and remote AS in this file to match your Topology
+
+(NOTE:  The rest of the sections should not need to be changed)
+
+
+Step 2:
+=================================
+
+Now one can run controller:
+
+        make demo
+        python sr_demo.py -u <eAPI username> -p <eAPI password> -a <ISIS DB Topology Export Router IP>
+
+
+Now browse to the IP address of the VM or local machine where docker is installed, on port 5003
+
+http://"localhost" or "VM IP":5001
 
 
 SYSTEM RUNTIME FILES
@@ -51,12 +111,12 @@ app.py
 ------
         Fires up a simple HTTP portal on port 5000 so one can post via the
         EXABGP API.
-        
-        
+
+
 exabgp.env
 ----------
         Environmental file for exabgp.  Copied into srbase
-       
+
 Makefile/Dockerfile
 -------------------
 
@@ -66,34 +126,34 @@ Makefile/Dockerfile
 sr_demo.py
 -----------
           This is the main script that is a multiprocess python program.  One
-          process runs a Flask application to render the WebUI for interacting 
+          process runs a Flask application to render the WebUI for interacting
           with the controller.  Another process continually gets the SID's from
           the domain, and announces/removes routes upon any input from user via
-          Web UI, or automatically on any topology change.   File itself is 
+          Web UI, or automatically on any topology change.   File itself is
           extensively commented.
 
 index.html
 -----------
           This is the html file that builds the webpage.
-          
-       
+
+
 images
 -------
-          Holds the digrams for the original demo.  Can replace these if required.
-          Note: best to amend the index.html file if you dont want these included
-          
+          Holds the diagrams for the original demo.  Can replace these if required.
+          Note: best to amend the index.html file if you don't want these included
+
 monitor_interface.py
 --------------------
-          Monitor Interfaces Command for Arista Devices.  Used in this demo to 
+          Monitor Interfaces Command for Arista Devices.  Used in this demo to
           visulize trafficbeing engineered troughout the domain.
 
-          This script continually monitors interfaces in one, 
-          or more Arista devices. 
+          This script continually monitors interfaces in one,
+          or more Arista devices.
 
-          I created this program to allow one or a number of switches to be monitored at 
-          once, running on-box or off, and monitoring multiple specifically defined 
-          interfaces or all of them, and the ability to define variables like packet count, 
-          min packet rate to show etc.  
+          I created this program to allow one or a number of switches to be
+          monitored at once, running on-box or off, and monitoring multiple
+          specifically defined interfaces or all of them, and the ability to
+          define variables like packet count, min packet rate to show etc.  
 
           See the help below:
 
@@ -126,79 +186,14 @@ monitor_interface.py
                               Eth1,Eth7,Eth21-45
 
 
-          As an example if I want to monitor devices lf275,fm213 but only 
-          interfaces Eth2,4 and range 41-48, I want to show packet count and and KBps count 
+          As an example if I want to monitor devices lf275,fm213 but only
+          interfaces Eth2,4 and range 41-48, I want to show packet count and and KBps count
           I would run the follwoing:
 
-          
+
           python monitor_interfaces.py -u admin -p admin -r 10 -a lf275,fm213 --count_packet  -b -i Eth1,Eth2, Eth41-48
-          
+
 
           For no KBps count and all interfaces over the rate of 10pps:
 
           python monitor_interfaces.py -u admin -p admin -r 10 -a lf275,fm213,fm382 --count_packet
-
-
-
-Running the demo in a container
-===============================
-
-Once the git repository has been cloned locally the files srdemo and sr_demo.py need to be amended with the specific 
-Topology and Runtime information for your topology
-
-Change the following in sr_demo.py:  BGP_LU_Peer = 'xxx.xxx.xxx.xxx' (your ingress LER IP)
-Change the following in srdemo.conf: neighbor <Add your LER IP Address Here>
-
-One of the ISIS SR enabled routers that is in your domain will need to have eAPI enabled (see documentation).  This
-router will be used for topology (ISIS DB) export.
-
-Now one can run controller:
-
-        make demo
-        python sr_demo.py -u <eAPI username> -p <eAPI password> -a <ISIS DB Topology Export Router IP>
-        
-
-Now browse to the IP address of the VM or local machine where docker is installed, on port 5003
-
-http://"localhost" or "VM IP":5003
-
-
-Running the demo in a VM or a BMS without docker
-=================================================
-
-Build an Ubuntu BMS, or VM and add all requirements per the Dockerfile (detailed below - one can use the Makefile):
-
-        Base ubuntu 14.04 Install
-        apt-get update
-        apt-get install -qy --no-install-recommends wget python git
-        apt-get install -qy openssh-server
-        apt-get install -qy openssh-client
-        apt-get install -qy python-pip
-        apt-get install -qy python-dev
-        apt-get install -qy libxml2-dev
-        apt-get install -qy libxslt-dev
-        apt-get install -qy libssl-dev
-        apt-get install -qy libffi-dev
-        apt-get install -qy sudo
-        apt-get install -qy vim
-        apt-get install -qy telnet
-        apt-get clean
-        pip install flask
-        pip install pyeapi
-        pip install jsonrpc
-        pip install jsonrpclib
-
-        mkdir /home/demos/sr-demo
-
-        git clone https://github.com/Exa-Networks/exabgp.git
-        /home/demos/sr-demo/exabgp
-        git checkout master
-        chmod +x setup.py
-        sudo ./setup.py install
-        cd /home/demos/sr-demo
-        cp exabgp.env /usr/local/etc/exabgp/exabgp.env
-
-        useradd -m demo && echo "demo:demo" | chpasswd && adduser demo sudo
-
-Once the git repository has been cloned locally follow the same instructions above to configure the files and run the demo; 
-except the IP address of the controller (the VM EXABGP is installed on) will need to be specified in srdemo.conf and sr_demo.py in addition to the ingress LER IP.
