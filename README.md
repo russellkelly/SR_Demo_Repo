@@ -59,7 +59,7 @@ installed as above and you are in the srdemo bash shell proceed with the
 following steps:
 
 Step 1: Customize the TopologyVariables.yaml File.
-==================================================
+--------------------------------------------------
 
 Amend the variables in the file below to match your topology :
 
