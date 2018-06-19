@@ -175,7 +175,14 @@ class PopulateFiles(Process):
 					line = str(entry['prefix'])
 					#print line
 					if line in ActivePrefixes:
-						ActiveNodeSIDs.append(str(entry['systemId']))
+						try:
+							ActiveNodeSIDs.append(str(entry['systemId']))
+						except:
+							continue
+						try:
+							ActiveNodeSIDs.append(str(entry['hostname']))
+						except:
+							continue
 				#pp(ActiveNodeSIDs)
 				self.script_dir = os.path.dirname(__file__)
 				self.rel_path = "Active_SIDs"
