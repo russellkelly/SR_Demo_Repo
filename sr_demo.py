@@ -175,10 +175,12 @@ class PopulateFiles(Process):
 					line = str(entry['prefix'])
 					#print line
 					if line in ActivePrefixes:
+						# This line gets the hostname in vOES
 						try:
 							ActiveNodeSIDs.append(str(entry['systemId']))
 						except:
 							continue
+						# this link get the hostname in real routers
 						try:
 							ActiveNodeSIDs.append(str(entry['hostname']))
 						except:
