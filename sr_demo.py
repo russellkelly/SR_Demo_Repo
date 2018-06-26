@@ -383,7 +383,7 @@ class Get_SIDs_DICTS(Process):
 				for entry in Adj_SIDs:
 					for key in entry:
 						splitkey = key.split("&*&")
-						new_links_list_temp.append({"id": str(entry.get(key)), "source": str(splitkey[0]), "target": str(splitkey[1]),  "value":1})
+						new_links_list_temp.append({"id": str(splitkey[0])+":"+str(entry.get(key)), "source": str(splitkey[0]), "target": str(splitkey[1]),  "value":1})
 				for link in new_links_list_temp:
 					for node in node_names_final_list:
 						value = 1
@@ -509,6 +509,10 @@ class AddRemoveRoutes(Process):
 	def run(self):
 		PrimaryPathElementDictionary = {}
 		PrimaryPathList = []
+		FullPrimaryPath = []
+		FullPrimaryPathList = []
+		FullSecondaryPathList = []
+		FullSecondaryPath = []
 		ActiveSIDs = []
 		OldActiveSIDs = []
 		SecondaryPathList = []
@@ -555,18 +559,19 @@ class AddRemoveRoutes(Process):
 		
 				if len(self.data['ManualFECPath']) >= 1:
 					try:
-						if re.findall(r"\b\d{6}\b", self.data['ManualFECPath']):
-							path_sids = re.findall(r"\b\d{6}\b", self.data['ManualFECPath'])
+						if re.findall(r"\b\d{6,7}\b", self.data['ManualFECPath']):
+							path_sids = re.findall(r"\b\d{6,7}\b", self.data['ManualFECPath'])
 							self.data['path'] = path_sids
 						else:
-							print " You need to input space separated 6 Digit Labels!!!"
+							print " You need to input space separated 6 or 7 Digit Labels!!!"
 							return
 					except(KeyError, ValueError):
-						print " You need to input space separated 6 Digit Labels!!!"
+						print " You need to input space separated 6 or 7 Digit Labels!!!"
 						return
 					
 		### Right - now kick off the parsing and storing of said POST variables.
 		
+				Temp_Path_String = []		
 				try:
 					if str(self.data['dstPrefix']):
 						currentpath = str(self.data['dstPrefix'])+' next-hop ' +str(self.data['dstNH'])
@@ -578,13 +583,18 @@ class AddRemoveRoutes(Process):
 							else:
 								PrefixList.append(str(self.data['dstPrefix'])+' next-hop ' +str(self.data['dstNH']))
 					if self.data['Primary'] == True:
+						FullPrimaryPath = '&&*&&'.join(self.data['path'])
 						try:
 							for p in self.data['path']:
 								index = int(self.data['path'].index(p))
 								for node in self.Node_SIDs:
 									if node.get(p) != None:
 										self.data['path'][index] = str(node.get(p))
-							Path_String = ' '.join(self.data['path'])
+										Temp_Path_String.append(str(node.get(p)))
+								if ":" in p:
+									p = p.split(":")[1]
+									Temp_Path_String.append(p)
+							Path_String = ' '.join(Temp_Path_String)
 							currentpath = str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']'
 							current_fec_NH = str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH'])
 							current_fec = str(self.data['fec'])
@@ -616,13 +626,18 @@ class AddRemoveRoutes(Process):
 							pass
 						
 					if self.data['Secondary'] == True:
+						FullSecondaryPath = '&&*&&'.join(self.data['path'])
 						try:
 							for p in self.data['path']:
 								index = int(self.data['path'].index(p))
 								for node in self.Node_SIDs:
 									if node.get(p) != None:
 										self.data['path'][index] = str(node.get(p))
-							Path_String = ' '.join(self.data['path'])
+										Temp_Path_String.append(str(node.get(p)))
+								if ":" in p:
+									p = p.split(":")[1]
+									Temp_Path_String.append(p)
+							Path_String = ' '.join(Temp_Path_String)
 							currentpath = str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']'
 							if SecondaryPathList == []:
 								SecondaryPathList.append(str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']')
@@ -671,12 +686,17 @@ class AddRemoveRoutes(Process):
 				self.AllActiveSIDs = []
 				self.ActiveAdjSIDs = []
 				self.ActiveNodeSIDs = []
+				self.new_links_list_temp = []
+				self.ActiveNodeName = []
+				self.AllActiveSIDFullDetail = []
 				
 		##  This just gets the SID from the dictionaries returned from the ISIS database parsing function
 		### add them to AllActiveSIDs
 		
 				for line in self.Adj_SIDs:
 					for node in line:
+						splitnode = node.split("&*&")
+						self.new_links_list_temp.append(str(splitnode[0])+":"+str(line.get(node)))
 						adjsid = line[node]
 						self.ActiveAdjSIDs.append(adjsid)
 	
@@ -684,47 +704,63 @@ class AddRemoveRoutes(Process):
 					for node in line:
 						nsid = line[node]
 						self.ActiveNodeSIDs.append(nsid)
-				
+				for line in self.Node_SIDs:
+					for node in line:
+						self.ActiveNodeName.append(node)
+						
+				self.AllActiveSIDFullDetail = list(self.new_links_list_temp + self.ActiveNodeName)
 				self.AllActiveSIDs = list(set(self.ActiveNodeSIDs + self.ActiveAdjSIDs))
 
 		# Search the primary FEC Path list- where one or more labels are missing from the
 		# path.  Add these paths to the list TopoChangeRemovePathList (to be used later)
 		
-
+				try:
+					FullPrimaryPathList = FullPrimaryPath.split('&&*&&')
+					FullPrimaryPathList = [str(r) for r in FullPrimaryPathList]
+				except:
+					pass
+				
 				path_ip_address_list = []
-				for path in PrimaryPathList:
-					path_sids = re.findall(r"\b\d{6}\b", path)
-					if set(path_sids) < set(self.AllActiveSIDs) and deadcounter == DEADTIMECOUNTER:
+				if set(FullPrimaryPathList) < set(self.AllActiveSIDFullDetail) and deadcounter == DEADTIMECOUNTER:
 						pass
+					
 					
 		### If things are Still busted, build a list of the next hops we need to look for in the Secondary table to add.
 		
-					elif deadcounter == DEADTIMECOUNTER + 1:
-						for path in PrimaryPathList:
-							path_sids = re.findall(r"\b\d{6}\b", path)
-							if set(path_sids) < set(self.AllActiveSIDs):
-								deadcounter = DEADTIMECOUNTER
-								pass
-							else:
-								TopoChangeRemovePathList.append(path)
-								first_ip = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', path).group()
-								path_ip_address_list.append(first_ip)
-						deadcounter = DEADTIMECOUNTER
+				elif deadcounter == DEADTIMECOUNTER + 1:
+					for path in PrimaryPathList:
+						if set(FullPrimaryPathList) < set(self.AllActiveSIDFullDetail):
+							deadcounter = DEADTIMECOUNTER
+							pass
+						else:
+							TopoChangeRemovePathList.append(path)
+							first_ip = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', path).group()
+							path_ip_address_list.append(first_ip)
+					deadcounter = DEADTIMECOUNTER
 								
 		### Give it a hot half second - might be a glitch getting the ISIS DB, or a refresh of DB
 		### Sleep for 0.5 seconds and request the SID's again.
 		
-					else:
-						sleep(DEADTIMETIMER)
-						deadcounter +=1
+				else:
+					sleep(DEADTIMETIMER)
+					deadcounter +=1
 				#print path_ip_address_list
 
 		# First Step on secondary - Search the primary secondary Path list- if one or more labels are missing from the
 		# path remove it. 
-		
+
+				try:
+					FullSecondaryPathList = FullSecondaryPath.split('&&*&&')
+					FullSecondaryPathList = [str(r) for r in FullSecondaryPathList]
+					#print FullSecondaryPathList
+				except:
+					pass
+				
+				if set(FullSecondaryPathList) < set(self.AllActiveSIDFullDetail) and deadcounter == DEADTIMECOUNTER:
+						pass
+
 				for path in SecondaryPathList:
-					path_sids = re.findall(r"\b\d{6}\b", path)
-					if set(path_sids) < set(self.AllActiveSIDs):
+					if set(FullSecondaryPathList) < set(self.AllActiveSIDFullDetail):
 						pass
 					else:
 						SecondaryPathList.remove(path)
