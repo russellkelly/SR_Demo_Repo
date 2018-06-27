@@ -63,7 +63,7 @@ body {
 <div>
   <span style="float:left;"> </span>
   <fieldset>
-    <button onClick="history.go(0)"  class="w3-btn w3-hover-red">Refresh Topology - or shift+refresh broswer</button>
+    <button onClick="history.go(0)"  class="w3-btn w3-round-xlarge w3-hover-red">Refresh Topology - or shift+refresh broswer</button>
     <div>
       <label>LER</label>
       <input id="dstLER" type="text" placeholder="LER To Push To x.x.x.x" />
@@ -92,7 +92,7 @@ body {
     </div>
     <div id="curPath"></div>
     <div>
-          <button onClick="window.tepath=[]; updatePathDisplay();"  class="w3-btn w3-hover-red">Clear Path (Display Only)</button>
+          <button onClick="window.tepath=[]; updatePathDisplay();"  class="w3-btn w3-round-xlarge w3-hover-red">Clear Path (Display Only)</button>
           <label>  Manual FEC Push</label>
           <input id="ManualdstLER" type="text" placeholder="LER To Push To x.x.x.x" onsubmit="" />
           <input id="ManualFECDest" type="text" placeholder="FEC Dest x.x.x.x" onsubmit="" />
@@ -105,8 +105,8 @@ body {
           </select>
           <input id="ManualFECNH" type="text" placeholder="Next Hop x.x.x.x" onsubmit="" />
           <input id="ManualFECPath" type="text" placeholder="Label Path xxxxx xxxxx" onsubmit="" /><br>
-        <button onClick="addPath();"  class="w3-btn w3-hover-green">Submit Path Selected on Graph</button>
-        <button onClick="addManualPath();"  class="w3-btn w3-hover-green">Manual Label Path Add</button>
+        <button onClick="addPath();"  class="w3-btn w3-round-xlarge w3-hover-green">Submit Path Selected on Graph</button>
+        <button onClick="addManualPath();"  class="w3-btn w3-round-xlarge w3-hover-green">Manual Label Path Add</button>
     </div>
 
   </fieldset>
@@ -125,11 +125,11 @@ body {
         <option value="0.0.0.2">2</option>
         <option value="0.0.0.3">3</option>
       </select>
-        <button onClick="removeFEC();"  class="w3-btn2 w3-hover-red">Remove FEC      </button>
+        <button onClick="removeFEC();"  class="w3-btn2 w3-black w3-round-xlarge w3-hover-red">Remove FEC</button>
       <input id="dstLERPrefixRemove" type="text" placeholder="LER To Push To x.x.x.x" onsubmit="" />
       <label>Dest Route to Remove</label>
       <input id="RemoveRoute" type="text" placeholder="Prefix x.x.x.x/yy" onsubmit="" />
-        <button onClick="removeRoute();"  class="w3-btn2 w3-hover-red">Remove Route</button>
+        <button onClick="removeRoute();"  class="w3-btn2 w3-black w3-round-xlarge w3-hover-red">Remove Route</button>
     </fieldset>
 </div>
 
@@ -294,7 +294,7 @@ function removeFEC() {
       RemoveFEC: RemoveFEC,
       RemoveRoute: RemoveRoute,
       Secondary: SecondaryBoolean
-    }), function(){ alert('Path Programmed!'); });
+    }), function(){ alert('FEC Removed!'); });
 }
 
 function removeRoute() {
@@ -330,7 +330,7 @@ function removeRoute() {
       RemoveFEC: RemoveFEC,
       RemoveRoute: RemoveRoute,
       Secondary: SecondaryBoolean
-    }), function(){ alert('Path Programmed!'); });
+    }), function(){ alert('Route Removed!'); });
 }
 
 
@@ -436,13 +436,6 @@ setInterval(updatePathTextList, 1000); // Update the list of paths once a second
 
 </script>
 
-<img id="myDIV" src="images/Interop.png" style="float:right; display:none" width="575" height="550" />
-<img id="myDIV1" src="images/DCIDemo.png" style="float:right; display:none;" width="575" height="350" />
-<img id="myDIV2" src="images/SR_Anycast.png" style="float:right; display:none;" width="800" height="600" />
-<img id="myDIV3" src="images/LDP_interop.png" style="float:right; display:none;" width="800" height="600" />
-<img id="myDIV4" src="images/SR_CBF.png" style="float:right; display:none;" width="800" height="600" />
-<img id="myDIV5" src="images/SR_MacroTE.png" style="float:right; display:none;" width="800" height="600" />
-<img id="myDIV6" src="images/SR_MicroTE.png" style="float:right; display:none;" width="800" height="600" />
 </div>
 
 
@@ -546,32 +539,6 @@ function myFunction6() {
 <div id="pathList">
 
 </div>
-
-
-
-<div style="padding: 5px 5px 5px 5px; height: 870px; width: 310px;position:fixed;right:0;bottom:0">
-      <h4 align="center">Diagrams   (click to enlarge)</h4>
-  </SCRIPT>
-    <SCRIPT TYPE="text/javascript">
-      function popup(mylink, windowname) { 
-        if (! window.focus)return true;
-        var href;
-        if (typeof(mylink) == 'string') href=mylink;
-        else href=mylink.href; 
-        window.open(href, windowname, 'width=900,height=800,scrollbars=yes'); 
-        return false; 
-      }
-</SCRIPT>
-
-
-<MAP NAME="popupImgMap"> <AREA SHAPE=RECT HREF="images/Interop.png" ALT="My Popup" COORDS="10,10,300,200" onClick="return popup(this, 'gloss')">
-<MAP NAME="popupImgMap1"> <AREA SHAPE=RECT HREF="images/DCIDemoTenantA.png" ALT="Your Popup" COORDS="10,10,300,200"  onClick="return popup(this, 'gloss1')">
-<MAP NAME="popupImgMap2"> <AREA SHAPE=RECT HREF="images/DCIDemoTenantB.png" ALT="Your Popup1" COORDS="10,10,300,200"  onClick="return popup(this, 'gloss2')">
-<MAP NAME="popupImgMap3"> <AREA SHAPE=RECT HREF="images/Inter-AS.png" ALT="Your Popup1" COORDS="10,10,300,200"  onClick="return popup(this, 'gloss3')"> 
-</MAP> <IMG SRC="images/LabOverview.gif" HEIGHT=200 WIDTH=300 ALT="Interop" BORDER="0" USEMAP="#popupImgMap">
-</MAP> <IMG SRC="images/DCITenantA.gif" HEIGHT=200 WIDTH=300 ALT="Image Map Example" BORDER="0" USEMAP="#popupImgMap1">
-</MAP> <IMG SRC="images/DCITenantB.gif" HEIGHT=200 WIDTH=300 ALT="Image Map Example" BORDER="0" USEMAP="#popupImgMap2">
-</MAP> <IMG SRC="images/Inter-AS.gif" HEIGHT=200 WIDTH=300 ALT="Image Map Example" BORDER="0" USEMAP="#popupImgMap3">
 
 </div>
 

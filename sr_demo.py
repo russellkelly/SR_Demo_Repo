@@ -421,13 +421,13 @@ class Get_SIDs_DICTS(Process):
 		### Write to topology file for the D3 graph (thats the ONLY thing that uses it.)
 
 				json_prep = {"links":links_list, "nodes":node_names_final_list}
-				#print json_prep
+				#pp(json_prep)
 				filename_out = 'sr_topology.json'
 				open(filename_out, 'w').close()
 				with open(filename_out,'w') as json_out:
 					json.dump(json_prep, json_out, indent = 2)
 					json_out.close()
-				sleep(1)
+				sleep(0.1)
 			except KeyboardInterrupt:
 				sys.exit(0)
 
@@ -559,19 +559,13 @@ class AddRemoveRoutes(Process):
 		
 				if len(self.data['ManualFECPath']) >= 1:
 					try:
-						if re.findall(r"\b\d{6,7}\b", self.data['ManualFECPath']):
-							path_sids = re.findall(r"\b\d{6,7}\b", self.data['ManualFECPath'])
-							self.data['path'] = path_sids
-						else:
-							print " You need to input space separated 6 or 7 Digit Labels!!!"
-							return
+						self.data['path'] = self.data['ManualFECPath'].split(' ')
 					except(KeyError, ValueError):
-						print " You need to input space separated 6 or 7 Digit Labels!!!"
+						print " You need to input space separated Node Names (as shown on the diagram)!!!"
 						return
 					
 		### Right - now kick off the parsing and storing of said POST variables.
-		
-				Temp_Path_String = []		
+				Temp_Path_String = []
 				try:
 					if str(self.data['dstPrefix']):
 						currentpath = str(self.data['dstPrefix'])+' next-hop ' +str(self.data['dstNH'])
@@ -583,28 +577,26 @@ class AddRemoveRoutes(Process):
 							else:
 								PrefixList.append(str(self.data['dstPrefix'])+' next-hop ' +str(self.data['dstNH']))
 					if self.data['Primary'] == True:
-						FullPrimaryPath = '&&*&&'.join(self.data['path'])
+						FullPrimaryPath = [str(r) for r in self.data['path']]
+						FullPrimaryPathList.append(FullPrimaryPath)
 						try:
-							for p in self.data['path']:
-								index = int(self.data['path'].index(p))
-								for node in self.Node_SIDs:
-									if node.get(p) != None:
-										self.data['path'][index] = str(node.get(p))
-										Temp_Path_String.append(str(node.get(p)))
-								if ":" in p:
-									p = p.split(":")[1]
-									Temp_Path_String.append(p)
-							Path_String = ' '.join(Temp_Path_String)
-							currentpath = str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']'
-							current_fec_NH = str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH'])
-							current_fec = str(self.data['fec'])
-							
+							Path_String = ' '.join(str(e) for e in FullPrimaryPath)
+							if str(self.data['dstLER']) == "":
+								currentpath = ' announce route '+str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH'])+ ' label ['+Path_String+']'
+								current_fec_NH = str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH'])
+								current_fec = str(self.data['fec'])
+							else:
+								currentpath = 'neighbor ' + str(self.data['dstLER'])+' announce route '+str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH'])+ ' label ['+Path_String+']'
+								current_fec_NH = 'neighbor ' + str(self.data['dstLER'])+' announce route '+str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH'])
+								current_fec = 'neighbor ' + str(self.data['dstLER'])+' announce route '+str(self.data['fec'])
+
+								
 		### Do a couple of funky operations.  1) If the currentpath is in Primary path list - skip. 2) If the FEC  are the Same
 		### The put the "latest" in Primary and relegate the current primary to secondary.  This keeps the router and the controller in sync.
 		## As the router will always take the latest as advertised from exabgp. 3) Else - just add currentpath to PrimaryPath List
 		
 							if PrimaryPathList == []:
-								PrimaryPathList.append(str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']')
+								PrimaryPathList.append(currentpath)
 							for entry in PrimaryPathList:
 								if currentpath in PrimaryPathList:
 									pass
@@ -621,59 +613,51 @@ class AddRemoveRoutes(Process):
 									if b_any(current_fec in x for x in PrimaryPathList):
 										pass
 									else:
-										PrimaryPathList.append(str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']')
+										PrimaryPathList.append(currentpath)
 						except KeyError:
 							pass
 						
 					if self.data['Secondary'] == True:
-						FullSecondaryPath = '&&*&&'.join(self.data['path'])
+						FullSecondaryPath = [str(r) for r in self.data['path']]
+						FullSecondaryPathList.append(FullSecondaryPath)
 						try:
-							for p in self.data['path']:
-								index = int(self.data['path'].index(p))
-								for node in self.Node_SIDs:
-									if node.get(p) != None:
-										self.data['path'][index] = str(node.get(p))
-										Temp_Path_String.append(str(node.get(p)))
-								if ":" in p:
-									p = p.split(":")[1]
-									Temp_Path_String.append(p)
-							Path_String = ' '.join(Temp_Path_String)
-							currentpath = str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']'
+							Path_String = ' '.join(str(e) for e in FullSecondaryPath)
+							if str(self.data['dstLER']) == "":
+								currentpath = ' announce route '+str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+Path_String+']'
+								current_fec_NH = str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH'])
+								current_fec = str(self.data['fec'])
+							else:
+								currentpath = 'neighbor ' + str(self.data['dstLER'])+' announce route '+str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+Path_String+']'
+								current_fec_NH = 'neighbor ' + str(self.data['dstLER'])+' announce route '+str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH'])
+								current_fec = 'neighbor ' + str(self.data['dstLER'])+' announce route '+str(self.data['fec'])
 							if SecondaryPathList == []:
-								SecondaryPathList.append(str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']')
+								SecondaryPathList.append(currentpath)
 							for entry in SecondaryPathList:
 								if currentpath in SecondaryPathList:
 									pass
 								else:
-									SecondaryPathList.append(str(self.data['fec'])+' next-hop ' + str(self.data['dstFecNH']) + ' label ['+str(Path_String)+']')
+									SecondaryPathList.append(currentpath)
 						except KeyError:
 							pass
 					
 			###  Now remove any FEC routes (Primary or secondary) when the FECtoRemove is received
-					
-					if str(self.data['RemoveFEC']):
+
+					if str(self.data['RemoveFEC']) and str(self.data['dstLERFECRemove']) == "":
 						FECtoRemove = self.data['RemoveFEC']
-						for line in PrimaryPathList:
-							if line.find(FECtoRemove) == -1:
-								pass
-							else:
-								PrimaryPathList.remove(line)
+						PrimaryPathList = [line for line in PrimaryPathList if FECtoRemove not in line]
+						SecondaryPathList = [line for line in SecondaryPathList if FECtoRemove not in line]
+					elif str(self.data['RemoveFEC']) and str(self.data['dstLERFECRemove']) != "":
 						FECtoRemove = self.data['RemoveFEC']
-						for line in SecondaryPathList:
-							if line.find(FECtoRemove) == -1:
-								pass
-							else:
-								SecondaryPathList.remove(line)
+						dstLERFECRemove = self.data['dstLERFECRemove']
+						PrimaryPathList = [line for line in PrimaryPathList if (FECtoRemove and dstLERFECRemove) not in line]
+						SecondaryPathList = [line for line in SecondaryPathList if (FECtoRemove and dstLERFECRemove) not in line]
+
 								
 			###  Now remove any Route when the RouteRemove is received
 					
 					if str(self.data['RemoveRoute']):
 						RoutetoRemove = self.data['RemoveRoute']
-						for line in PrefixList:
-							if line.find(RoutetoRemove) == -1:
-								pass
-							else:
-								PrefixList.remove(line)
+						PrefixList = [line for line in PrefixList if RoutetoRemove not in line]
 								
 				except KeyError:
 					pass
@@ -692,14 +676,15 @@ class AddRemoveRoutes(Process):
 				
 		##  This just gets the SID from the dictionaries returned from the ISIS database parsing function
 		### add them to AllActiveSIDs
-		
+
+				
 				for line in self.Adj_SIDs:
 					for node in line:
 						splitnode = node.split("&*&")
 						self.new_links_list_temp.append(str(splitnode[0])+":"+str(line.get(node)))
 						adjsid = line[node]
 						self.ActiveAdjSIDs.append(adjsid)
-	
+
 				for line in self.Node_SIDs:
 					for node in line:
 						nsid = line[node]
@@ -707,60 +692,62 @@ class AddRemoveRoutes(Process):
 				for line in self.Node_SIDs:
 					for node in line:
 						self.ActiveNodeName.append(node)
-						
-				self.AllActiveSIDFullDetail = list(self.new_links_list_temp + self.ActiveNodeName)
-				self.AllActiveSIDs = list(set(self.ActiveNodeSIDs + self.ActiveAdjSIDs))
 
+				self.AllActiveSIDFullDetail = list(self.new_links_list_temp + self.ActiveNodeName)
+				self.AllActiveSIDs = list(self.ActiveNodeSIDs + self.ActiveAdjSIDs)
+				
+				
 		# Search the primary FEC Path list- where one or more labels are missing from the
 		# path.  Add these paths to the list TopoChangeRemovePathList (to be used later)
-		
-				try:
-					FullPrimaryPathList = FullPrimaryPath.split('&&*&&')
-					FullPrimaryPathList = [str(r) for r in FullPrimaryPathList]
-				except:
-					pass
-				
+
+
 				path_ip_address_list = []
-				if set(FullPrimaryPathList) < set(self.AllActiveSIDFullDetail) and deadcounter == DEADTIMECOUNTER:
-						pass
-					
+
+				for path in PrimaryPathList:
+					path_sids = path[path.find("[")+1:path.find("]")]
+					path_sids = path_sids.split()
+					print path_sids
+					if set(path_sids) < set(self.AllActiveSIDFullDetail) and deadcounter == DEADTIMECOUNTER:
+						print "Checked full primary path all ok \n"
 					
 		### If things are Still busted, build a list of the next hops we need to look for in the Secondary table to add.
 		
-				elif deadcounter == DEADTIMECOUNTER + 1:
-					for path in PrimaryPathList:
-						if set(FullPrimaryPathList) < set(self.AllActiveSIDFullDetail):
-							deadcounter = DEADTIMECOUNTER
-							pass
-						else:
-							TopoChangeRemovePathList.append(path)
-							first_ip = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', path).group()
-							path_ip_address_list.append(first_ip)
-					deadcounter = DEADTIMECOUNTER
-								
+					elif deadcounter == DEADTIMECOUNTER + 1:
+						for path in PrimaryPathList:
+							path_sids = path[path.find("[")+1:path.find("]")]
+							path_sids = path_sids.split()
+							if set(path_sids) < set(self.AllActiveSIDFullDetail):
+								deadcounter = DEADTIMECOUNTER
+								pass
+							else:
+								TopoChangeRemovePathList.append(path)
+								first_ip = re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', path).group()
+								path_ip_address_list.append(first_ip)
+						deadcounter = DEADTIMECOUNTER
+	
+						
 		### Give it a hot half second - might be a glitch getting the ISIS DB, or a refresh of DB
 		### Sleep for 0.5 seconds and request the SID's again.
 		
-				else:
-					sleep(DEADTIMETIMER)
-					deadcounter +=1
-				#print path_ip_address_list
+					else:
+						sleep(DEADTIMETIMER)
+						deadcounter +=1
 
 		# First Step on secondary - Search the primary secondary Path list- if one or more labels are missing from the
-		# path remove it. 
-
-				try:
-					FullSecondaryPathList = FullSecondaryPath.split('&&*&&')
-					FullSecondaryPathList = [str(r) for r in FullSecondaryPathList]
-					#print FullSecondaryPathList
-				except:
-					pass
-				
-				if set(FullSecondaryPathList) < set(self.AllActiveSIDFullDetail) and deadcounter == DEADTIMECOUNTER:
-						pass
+		# path remove it.
+						
 
 				for path in SecondaryPathList:
-					if set(FullSecondaryPathList) < set(self.AllActiveSIDFullDetail):
+					path_sids = path[path.find("[")+1:path.find("]")]
+					path_sids = path_sids.split()
+					if set(path_sids) < set(self.AllActiveSIDFullDetail) and deadcounter == DEADTIMECOUNTER:
+						print "Checked full secondary path all ok \n"
+						
+
+				for path in SecondaryPathList:
+					path_sids = path[path.find("[")+1:path.find("]")]
+					path_sids = path_sids.split()
+					if set(path_sids) < set(self.AllActiveSIDFullDetail):
 						pass
 					else:
 						SecondaryPathList.remove(path)
@@ -792,6 +779,7 @@ class AddRemoveRoutes(Process):
 		
 		## Now Program the changed Primary FEC Routes: Program Them!!!  Skip if nothing changed completely.
 				
+				
 				if len(OldPrimaryPathList) == len(PrimaryPathList) and cmp(PrimaryPathList, OldPrimaryPathList) == 0:
 					pass
 				
@@ -799,18 +787,20 @@ class AddRemoveRoutes(Process):
 					print("Advertising the following newly learned FEC routes for the same FEC")	
 					for ppath in PrimaryPathList:
 						if ppath not in OldPrimaryPathList:
-							r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'announce route '+str(ppath))})
+							ppath = self.sid_replace(ppath, self.Node_SIDs, self.new_links_list_temp)
+							r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, str(ppath))})
 							sleep(.2)
-							print 'announce route '+str(ppath)
+							print(str(ppath))
 	
 				
 				elif len(OldPrimaryPathList) == 0 and len(PrimaryPathList) >= 0:
 					print("Advertising the following newly learned FEC routes First Match")	
 					for ppath in PrimaryPathList:
 						if ppath not in OldPrimaryPathList:
-							r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'announce route '+str(ppath))})
+							ppath = self.sid_replace(ppath, self.Node_SIDs, self.new_links_list_temp)
+							r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, str(ppath))})
 							sleep(.2)
-							print 'announce route '+str(ppath)
+							print (str(ppath))
 	
 				
 				elif len(OldPrimaryPathList) > len(PrimaryPathList):
@@ -818,22 +808,31 @@ class AddRemoveRoutes(Process):
 					for route in OldPrimaryPathList:
 						if route not in PrimaryPathList:
 							path_copy = copy.deepcopy(route)
-							withdraw_ip = path_copy.split("next-hop", 1)[0]
-							ip_list = re.findall( r'[0-9]+(?:\.[0-9]+){3}', path_copy )
-							next_hop_ip = ip_list[1]
-							r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'withdraw route ' + str(withdraw_ip) +' next-hop ' + str(next_hop_ip)+ ' label [800000]''\n')})
-							sleep(.2)
-							print 'withdraw route ' + str(withdraw_ip) +' next-hop ' + str(next_hop_ip)+ ' label [800000]''\n'
+							if 'neighbor' not in path_copy:
+								ip_list = re.findall( r'[0-9]+(?:\.[0-9]+){3}', path_copy )
+								withdraw_ip = ip_list[0]
+								next_hop_ip = ip_list[1]
+								r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'withdraw route ' + str(withdraw_ip) +' next-hop ' + str(next_hop_ip)+ ' label [800000]''\n')})
+								sleep(.2)
+								print 'withdraw route ' + str(withdraw_ip) +' next-hop ' + str(next_hop_ip)+ ' label [800000]''\n'
+							else:
+								ip_list = re.findall( r'[0-9]+(?:\.[0-9]+){3}', path_copy )
+								neighbor_ip = ip_list[0]
+								withdraw_ip = ip_list[1]
+								next_hop_ip = ip_list[2]
+								r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'neighbor '+str(neighbor_ip)+' withdraw route ' + str(withdraw_ip) +' next-hop ' + str(next_hop_ip)+ ' label [800000]''\n')})
+								sleep(.2)
+								print 'neighbor '+str(neighbor_ip)+' withdraw route ' + str(withdraw_ip) +' next-hop ' + str(next_hop_ip)+ ' label [800000]''\n'
 	
 	
 				elif len(OldPrimaryPathList) < len(PrimaryPathList):
 					print("Advertising the following newly learned FEC routes last match")
-					for route in PrimaryPathList:
-						if route not in OldPrimaryPathList:
-							r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'announce route '+str(route))})
+					for ppath in PrimaryPathList:
+						if ppath not in OldPrimaryPathList:
+							ppath = self.sid_replace(ppath, self.Node_SIDs, self.new_links_list_temp)
+							r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, str(ppath))})
 							sleep(.2)
-							print 'announce route '+str(route)
-							
+							print(str(ppath))							
 			
 
 				
@@ -875,7 +874,7 @@ class AddRemoveRoutes(Process):
 						if route not in OldPrefixList:
 							r = requests.post('http://' + str(controller_ip) + ':5000', files={'command': (None, 'announce route '+str(route))})
 							sleep(.2)
-							print 'announce route '+str(route)			
+							print 'announce route '+str(route)					
 	
 	
 		###  Just print out the paths for visibility
@@ -904,7 +903,7 @@ class AddRemoveRoutes(Process):
 					json.dump(json_prep, json_out, indent = 2)
 					json_out.close()
 					
-				sleep(1)
+				sleep(1)								### Used to Slow down with debugging	
 				_=os.system("clear")					### (need to move display to JSON))
 				
 				
@@ -927,8 +926,27 @@ class AddRemoveRoutes(Process):
 			if str(link['target']) == a and str(link['source']) == b:
 				result = lst.index(link)
 		return result
-
 	
+	def sid_replace(self, string, listOfDict, ListofSIDs):
+		self.Node_Sid_Dict = {}
+		self.Adj_SID_Dict = {}
+		self.All_SIDs = {}
+		
+		for entry in ListofSIDs:
+			value = entry.split(":")[1]
+			self.Adj_SID_Dict[entry] = value
+
+		for _ in listOfDict:
+		  self.Node_Sid_Dict[_.keys()[0]] = _[_.keys()[0]]
+		  
+		self.Node_Sid_Dict.update(self.Adj_SID_Dict)
+
+		t = string
+		for key in self.Node_Sid_Dict:
+			t = t.replace(key, self.Node_Sid_Dict[key])
+		return t
+
+
 
 class MyError(Exception):
 	def __init__(self, value):
