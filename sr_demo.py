@@ -427,7 +427,7 @@ class Get_SIDs_DICTS(Process):
 				with open(filename_out,'w') as json_out:
 					json.dump(json_prep, json_out, indent = 2)
 					json_out.close()
-				sleep(0.1)
+				sleep(0.25)
 			except KeyboardInterrupt:
 				sys.exit(0)
 
@@ -937,14 +937,15 @@ class AddRemoveRoutes(Process):
 			self.Adj_SID_Dict[entry] = value
 
 		for _ in listOfDict:
-		  self.Node_Sid_Dict[_.keys()[0]] = _[_.keys()[0]]
-		  
-		self.Node_Sid_Dict.update(self.Adj_SID_Dict)
+			self.Node_Sid_Dict[_.keys()[0]] = _[_.keys()[0]]
 
 		t = string
+		for key in self.Adj_SID_Dict:
+			t = t.replace(key, self.Adj_SID_Dict[key])
 		for key in self.Node_Sid_Dict:
 			t = t.replace(key, self.Node_Sid_Dict[key])
 		return t
+
 
 
 
