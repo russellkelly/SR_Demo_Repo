@@ -560,6 +560,7 @@ class AddRemoveRoutes(Process):
 				if len(self.data['ManualFECPath']) >= 1:
 					try:
 						self.data['path'] = self.data['ManualFECPath'].split(' ')
+						self.data['dstLER'] = self.data['ManualdstLER']
 					except(KeyError, ValueError):
 						print " You need to input space separated Node Names (as shown on the diagram)!!!"
 						return

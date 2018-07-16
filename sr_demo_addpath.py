@@ -561,6 +561,7 @@ class AddRemoveRoutes(Process):
 					try:
 						self.data['path'] = self.data['ManualFECPath'].split(' ')
 						self.data['FECPathID'] = self.data['ManualFECPathID']
+						self.data['dstLER'] = self.data['ManualdstLER']
 					except(KeyError, ValueError):
 						print " You need to input space separated Node Names (as shown on the diagram)!!!"
 						return
