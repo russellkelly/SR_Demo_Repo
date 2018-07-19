@@ -647,12 +647,12 @@ class AddRemoveRoutes(Process):
 			###  Now remove any FEC routes (Primary or secondary) when the FECtoRemove is received
 
 					if str(self.data['RemoveFEC']) and str(self.data['dstLERFECRemove']) == "":
-						FECtoRemove = self.data['RemoveFEC']
+						FECtoRemove = ' '+self.data['RemoveFEC']+' '
 						PrimaryPathList = [line for line in PrimaryPathList if FECtoRemove not in line]
 						SecondaryPathList = [line for line in SecondaryPathList if FECtoRemove not in line]
 					elif str(self.data['RemoveFEC']) and str(self.data['dstLERFECRemove']) != "":
-						FECtoRemove = self.data['RemoveFEC']
-						dstLERFECRemove = self.data['dstLERFECRemove']
+						FECtoRemove = ' '+self.data['RemoveFEC']+' '
+						dstLERFECRemove = ' '+self.data['dstLERFECRemove']+' '
 						PrimaryPathList = [line for line in PrimaryPathList if (FECtoRemove and dstLERFECRemove) not in line]
 						SecondaryPathList = [line for line in SecondaryPathList if (FECtoRemove and dstLERFECRemove) not in line]
 

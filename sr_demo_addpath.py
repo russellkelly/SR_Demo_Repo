@@ -647,17 +647,39 @@ class AddRemoveRoutes(Process):
 					
 			###  Now remove any FEC routes (Primary or secondary) when the FECtoRemove is received
 
+					PrimaryPathListRemove = []
+					SecondaryPathListRemove = []
 					if str(self.data['RemoveFEC']) and str(self.data['dstLERFECRemove']) == "":
-						FECtoRemove = self.data['RemoveFEC']
-						PathToRemove = self.data['ManualFECPathID']
-						PrimaryPathList = [line for line in PrimaryPathList if (FECtoRemove and PathToRemove) not in line]
-						SecondaryPathList = [line for line in SecondaryPathList if (FECtoRemove and PathToRemove) not in line]
+						FECtoRemove = ' '+self.data['RemoveFEC']+ ' '
+						PathToRemove = ' '+self.data['ManualFECPathID']+' '
+						for line in PrimaryPathList:
+							if (FECtoRemove and PathToRemove) in line:
+								PrimaryPathListRemove.append(line)
+						PrimaryPathList = [x for x in PrimaryPathList  if x not in PrimaryPathListRemove]
+						for line in SecondaryPathList:
+							if (FECtoRemove and PathToRemove) in line:
+								SecondaryPathListRemove.append(line)
+						SecondaryPathList = [x for x in SecondaryPathList  if x not in SecondaryPathListRemove]
 					elif str(self.data['RemoveFEC']) and str(self.data['dstLERFECRemove']) != "":
-						FECtoRemove = self.data['RemoveFEC']
-						dstLERFECRemove = self.data['dstLERFECRemove']
-						PathToRemove = self.data['ManualFECPathID']
-						PrimaryPathList = [line for line in PrimaryPathList if (FECtoRemove and dstLERFECRemove and PathToRemove) not in line]
-						SecondaryPathList = [line for line in SecondaryPathList if (FECtoRemove and dstLERFECRemove and PathToRemove) not in line]
+						FECtoRemove = ' '+self.data['RemoveFEC']+ ' '
+						dstLERFECRemove = ' '+self.data['dstLERFECRemove']+' '
+						PathToRemove = ' '+self.data['ManualFECPathID']+' '
+						for line in PrimaryPathList:
+							if (FECtoRemove and dstLERFECRemove) in line:
+								subline = line
+								if PathToRemove in subline:
+									PrimaryPathListRemove.append(subline)
+								else:
+									pass
+						PrimaryPathList = [x for x in PrimaryPathList  if x not in PrimaryPathListRemove]
+						for line in SecondaryPathList:
+							if (FECtoRemove and dstLERFECRemove) in line:
+								subline = line
+								if PathToRemove in subline:
+									SecondaryPathListRemove.append(subline)
+								else:
+									pass
+						SecondaryPathList = [x for x in SecondaryPathList  if x not in SecondaryPathListRemove]
 
 								
 			###  Now remove any Route when the RouteRemove is received
