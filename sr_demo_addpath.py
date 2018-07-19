@@ -163,7 +163,10 @@ class PopulateFiles(Process):
 				ActiveNodeSIDs = []
 				ActivePrefixes = []
 				output = self.switch.runCmds ( 1, [ C1 ], "json" )
-				prefix_segment_details = output[0]['vrfs']['default']['isisInstances']['sr_instance']['prefixSegments']
+				sr_instance = output[0]['vrfs']['default']['isisInstances']
+				for key in sr_instance:
+					sr_instance_name = key
+				prefix_segment_details = output[0]['vrfs']['default']['isisInstances'][str(sr_instance_name)]['prefixSegments']
 				sleep(0.1)
 				output1 = self.switch.runCmds ( 1, [ 'show ip route '  ], "json" )
 				sleep(0.1)
@@ -175,16 +178,16 @@ class PopulateFiles(Process):
 					line = str(entry['prefix'])
 					#print line
 					if line in ActivePrefixes:
-						# This line gets the hostname in vOES
-						try:
-							ActiveNodeSIDs.append(str(entry['systemId']))
-						except:
-							continue
 						# this link get the hostname in real routers
 						try:
 							ActiveNodeSIDs.append(str(entry['hostname']))
 						except:
-							continue
+							# This line gets the hostname in vEOS
+							try:
+								ActiveNodeSIDs.append(str(entry['systemId']))
+	
+							except:
+								continue
 				#pp(ActiveNodeSIDs)
 				self.script_dir = os.path.dirname(__file__)
 				self.rel_path = "Active_SIDs"
