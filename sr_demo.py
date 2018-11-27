@@ -233,7 +233,7 @@ class Get_ISIS_SIDS(object):
 				n = n.split('.')[0]
 				#print n,
 				code = '%s&*&%s' % ( hostname, n)
-			if l.startswith('Adj-sid'):
+			if l.startswith('Adj-sid') and '[ L V ]' in l:
 				l = l.strip()
 				l = l.rstrip()
 				tmp = l.split( ':' )
